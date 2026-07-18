@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>DASH LEVELS — ¡Construye con tus manos!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cyan:#00f0ff;--magenta:#ff00ff;--gold:#ffd700;--green:#00ff88;
+  --red:#ff3355;
+  --orange:#ff6a00;--orange2:#ff9c00;--amber:#ffb347;
+  --bg:#0d0500;--panel:#160a00;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);overflow:hidden;font-family:'Nunito',sans-serif;user-select:none;}
+ 
+#input_video{position:fixed;inset:0;width:100vw;height:100vh;object-fit:cover;transform:scaleX(-1);z-index:1;}
+#three_canvas{position:fixed;inset:0;width:100vw;height:100vh;z-index:2;pointer-events:none;}
+#biometric_canvas{position:fixed;inset:0;width:100vw;height:100vh;z-index:3;transform:scaleX(-1);pointer-events:none;}
+#tetris_canvas{position:fixed;inset:0;width:100vw;height:100vh;z-index:4;pointer-events:none;display:none;}
+#rubik_canvas{position:fixed;inset:0;width:100vw;height:100vh;z-index:4;pointer-events:none;display:none;}
+ 
+#finger_cursor{
+  position:fixed;z-index:99;width:36px;height:36px;border-radius:50%;
+  border:3px solid var(--orange);pointer-events:none;transform:translate(-50%,-50%);
+  display:none;background:rgba(255,106,0,.12);
+  box-shadow:0 0 18px var(--orange);transition:background .1s;
+}
+#finger_cursor.hovering{background:rgba(255,106,0,.38);box-shadow:0 0 30px var(--orange);}
+ 
+#toast{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:80;
+  background:rgba(255,106,0,.18);border:2px solid var(--orange);border-radius:20px;
+  padding:10px 28px;color:var(--orange2);font-family:'Boogaloo',cursive;font-size:20px;
+  display:none;pointer-events:none;white-space:nowrap;backdrop-filter:blur(8px);
+  box-shadow:0 0 30px rgba(255,106,0,.3);
+}
+ 
+/* ─── SOCIAL BADGE ─── */
+#social_badge{
+  position:fixed;bottom:16px;left:16px;z-index:70;
+  display:flex;align-items:center;gap:7px;
+  background:rgba(13,5,0,.82);
+  border:1px solid rgba(255,106,0,.2);
+  border-radius:20px;padding:5px 12px 5px 8px;
+  backdrop-filter:blur(6px);
+  text-decoration:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+#social_badge:hover{border-color:rgba(255,106,0,.55);box-shadow:0 0 18px rgba(255,106,0,.25);}
+.sb_icon{
+  width:22px;height:22px;border-radius:6px;
+  background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+  display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;
+}
+.sb_text{display:flex;flex-direction:column;line-height:1.2;}
+.sb_name{font-size:10px;font-weight:900;color:var(--orange2);letter-spacing:.3px;}
+.sb_sub{font-size:8px;color:rgba(255,180,70,.5);letter-spacing:.3px;}
+ 
+/* ═══════════════════════════════════
+   MENU SCREEN — ORANGE-BLACK THEME
+═══════════════════════════════════ */
+#menu_screen{
+  position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 0%, #2a1000 0%, #160800 40%, #0d0500 80%);
+}
+#menu_screen::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba(255,106,0,.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(255,60,0,.08) 0%, transparent 40%),
+    radial-gradient(ellipse at 50% 100%, rgba(255,156,0,.15) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff6a00' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+#menu_screen::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,#ff6a00,#ffb347,#ff6a00,transparent);
+  box-shadow:0 0 30px rgba(255,106,0,.6);
+}
+@keyframes ember1{0%{transform:translateY(0) translateX(0) scale(1);opacity:.7;}50%{transform:translateY(-120px) translateX(20px) scale(.6);opacity:.4;}100%{transform:translateY(-240px) translateX(-10px) scale(.1);opacity:0;}}
+@keyframes ember2{0%{transform:translateY(0) translateX(0) scale(.8);opacity:.5;}60%{transform:translateY(-160px) translateX(-30px) scale(.4);opacity:.25;}100%{transform:translateY(-300px) translateX(15px) scale(0);opacity:0;}}
+.ember{position:absolute;border-radius:50%;pointer-events:none;}
+.e1{width:6px;height:6px;background:#ff6a00;bottom:60px;left:20%;animation:ember1 3.2s ease-out infinite;}
+.e2{width:4px;height:4px;background:#ffb347;bottom:40px;left:35%;animation:ember2 2.8s ease-out infinite .5s;}
+.e3{width:5px;height:5px;background:#ff9c00;bottom:80px;left:55%;animation:ember1 3.6s ease-out infinite 1s;}
+.e4{width:3px;height:3px;background:#ffdd00;bottom:50px;left:70%;animation:ember2 2.4s ease-out infinite 1.5s;}
+.e5{width:7px;height:7px;background:#ff4500;bottom:70px;left:85%;animation:ember1 4s ease-out infinite .8s;}
+.e6{width:4px;height:4px;background:#ffb347;bottom:45px;left:10%;animation:ember2 3s ease-out infinite 2s;}
+ 
+@keyframes cubeFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+ 
+.logo_wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:36px;position:relative;}
+.logo_cubes_row{display:flex;gap:8px;margin-bottom:6px;}
+ 
+.logo_title{
+  font-family:'Boogaloo',cursive;font-size:82px;line-height:1;
+  letter-spacing:6px;
+  background:linear-gradient(135deg,#ff6a00 0%,#ffdd00 45%,#ff4500 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px rgba(255,106,0,.7)) drop-shadow(0 4px 20px rgba(255,60,0,.4));
+}
+.logo_subtitle{
+  font-size:13px;letter-spacing:8px;color:rgba(255,156,0,.7);
+  font-weight:800;text-transform:uppercase;margin-top:-4px;
+}
+ 
+.gesture_legend{
+  display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap;justify-content:center;
+}
+.gl_bubble{
+  background:rgba(255,106,0,.1);border:1.5px solid rgba(255,106,0,.3);
+  border-radius:30px;padding:6px 16px;display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:800;color:rgba(255,180,70,.85);letter-spacing:.5px;
+  backdrop-filter:blur(4px);
+}
+.gl_bubble span{font-size:18px;}
+ 
+.mode_cards{display:flex;gap:18px;margin-bottom:28px;flex-wrap:wrap;justify-content:center;}
+.mode_card{
+  width:155px;padding:20px 12px;border-radius:20px;
+  background:rgba(22,8,0,.9);border:2px solid rgba(255,106,0,.2);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+}
+.mode_card::before{
+  content:'';position:absolute;inset:0;opacity:0;
+  transition:opacity .2s;border-radius:18px;
+}
+.mode_card.card_build::before{background:radial-gradient(ellipse at 50% 80%,rgba(255,106,0,.18),transparent);}
+.mode_card.card_free::before{background:radial-gradient(ellipse at 50% 80%,rgba(0,255,136,.15),transparent);}
+.mode_card.card_tetris::before{background:radial-gradient(ellipse at 50% 80%,rgba(255,0,255,.15),transparent);}
+.mode_card.card_rubik::before{background:radial-gradient(ellipse at 50% 80%,rgba(255,215,0,.15),transparent);}
+.mode_card.hovered{transform:translateY(-8px) scale(1.04);}
+.mode_card.hovered.card_build{border-color:var(--orange);box-shadow:0 0 40px rgba(255,106,0,.4);}
+.mode_card.hovered.card_free{border-color:var(--green);box-shadow:0 0 40px rgba(0,255,136,.3);}
+.mode_card.hovered.card_tetris{border-color:var(--magenta);box-shadow:0 0 40px rgba(255,0,255,.3);}
+.mode_card.hovered.card_rubik{border-color:var(--gold);box-shadow:0 0 40px rgba(255,215,0,.3);}
+.mode_card.hovered::before{opacity:1;}
+.mc_emoji{font-size:36px;position:relative;z-index:1;}
+.mc_name{font-family:'Boogaloo',cursive;font-size:17px;color:#fff;letter-spacing:2px;position:relative;z-index:1;}
+.mc_desc{font-size:9px;color:rgba(255,200,140,.6);text-align:center;line-height:1.5;position:relative;z-index:1;}
+.mc_ring{
+  width:52px;height:52px;border-radius:50%;border:3px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+  margin-top:4px;transition:border-color .2s;
+}
+.mc_ring_fill{
+  position:absolute;inset:0;border-radius:50%;transform:scaleY(0);transform-origin:bottom;
+  transition:transform .06s linear;opacity:.4;
+}
+.card_build .mc_ring{border-color:rgba(255,106,0,.5);color:var(--orange);}.card_build .mc_ring_fill{background:var(--orange);}
+.card_free .mc_ring{border-color:rgba(0,255,136,.4);color:var(--green);}.card_free .mc_ring_fill{background:var(--green);}
+.card_tetris .mc_ring{border-color:rgba(255,0,255,.4);color:var(--magenta);}.card_tetris .mc_ring_fill{background:var(--magenta);}
+.card_rubik .mc_ring{border-color:rgba(255,215,0,.4);color:var(--gold);}.card_rubik .mc_ring_fill{background:var(--gold);}
+.mc_ring_icon{font-size:20px;position:relative;z-index:1;}
+.mc_ring.slapping{border-color:rgba(255,255,255,.9)!important;transform:scale(1.1);}
+.mc_hint{font-size:9px;color:rgba(255,180,100,.4);margin-top:2px;text-align:center;}
+.mc_badge{
+  position:absolute;top:8px;right:8px;
+  background:rgba(255,106,0,.25);border:1px solid rgba(255,106,0,.4);
+  border-radius:8px;padding:2px 6px;font-size:8px;font-weight:900;
+  color:var(--amber);letter-spacing:1px;
+}
+.menu_gesture_hint{
+  background:rgba(255,106,0,.1);border:1px solid rgba(255,106,0,.25);border-radius:14px;
+  padding:10px 24px;color:rgba(255,180,70,.75);font-size:12px;font-weight:700;
+  letter-spacing:1px;backdrop-filter:blur(4px);
+}
+ 
+/* ═══════════════════════════════════
+   CHALLENGE INTRO OVERLAY
+═══════════════════════════════════ */
+#challenge_intro{
+  position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(6px);
+}
+.ch_intro_card{
+  background:linear-gradient(145deg,#1a0800,#0d0500);
+  border:2.5px solid var(--orange);border-radius:28px;
+  padding:36px 48px;text-align:center;max-width:500px;width:92vw;
+  box-shadow:0 0 80px rgba(255,106,0,.35);
+  animation:popIn .4s cubic-bezier(.2,1.4,.6,1) both;
+}
+.chi_emoji{font-size:72px;margin-bottom:10px;display:block;}
+.chi_title{font-family:'Boogaloo',cursive;font-size:42px;color:var(--orange2);letter-spacing:3px;margin-bottom:8px;}
+.chi_desc{font-size:15px;color:#ffd0a0;margin-bottom:18px;line-height:1.6;}
+.chi_goal_box{
+  background:rgba(255,106,0,.12);border:2px solid rgba(255,106,0,.4);
+  border-radius:18px;padding:16px 24px;margin-bottom:20px;
+}
+.chi_goal_label{font-size:11px;color:rgba(255,180,70,.6);font-weight:900;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;}
+.chi_goal_num{font-family:'Boogaloo',cursive;font-size:64px;color:var(--orange);line-height:1;text-shadow:0 0 30px rgba(255,106,0,.6);}
+.chi_goal_unit{font-size:14px;color:#ffb347;font-weight:700;margin-top:4px;}
+.chi_time_row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;color:#cc8844;font-size:13px;font-weight:700;}
+.chi_time_val{color:var(--gold);font-family:'Boogaloo',cursive;font-size:20px;}
+.chi_hint{font-size:11px;color:rgba(255,180,70,.5);margin-bottom:20px;line-height:1.7;}
+.chi_start_ring{
+  width:90px;height:90px;border-radius:50%;
+  border:3px solid rgba(255,106,0,.5);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  position:relative;overflow:hidden;margin:0 auto;
+  transition:border-color .2s,transform .15s;cursor:pointer;
+}
+.chi_start_ring .csr_fill{position:absolute;inset:0;border-radius:50%;transform:scaleY(0);transform-origin:bottom;transition:transform .06s linear;opacity:.4;background:var(--orange);}
+.chi_start_ring .csr_icon{font-size:30px;position:relative;z-index:1;}
+.chi_start_ring .csr_label{font-size:9px;font-weight:800;letter-spacing:.5px;position:relative;z-index:1;color:var(--orange);margin-top:2px;}
+.chi_start_ring.slapping{border-color:rgba(255,255,255,.9)!important;transform:scale(1.1);}
+.chi_start_hint{font-size:9px;color:rgba(255,255,255,.3);margin-top:6px;text-align:center;}
+ 
+/* ═══════════════════════════════════
+   IN-GAME HUD
+═══════════════════════════════════ */
+#game_screen{position:fixed;inset:0;z-index:10;display:none;pointer-events:none;}
+ 
+#game_topbar{
+  position:absolute;top:16px;left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;gap:20px;
+  background:rgba(13,5,0,.88);border:1.5px solid rgba(255,106,0,.3);
+  border-radius:50px;padding:8px 24px;color:#ffe0c0;font-size:13px;
+  backdrop-filter:blur(8px);
+}
+#game_topbar .tb_title{font-family:'Boogaloo',cursive;font-size:18px;color:var(--orange2);letter-spacing:2px;}
+#game_topbar .tb_stat{color:#cc8844;font-weight:700;}
+#game_topbar .tb_val{color:#fff;font-weight:900;}
+ 
+#game_actions{
+  position:absolute;top:16px;right:16px;
+  display:flex;flex-direction:column;gap:10px;pointer-events:none;
+}
+.game_action_btn{
+  width:110px;height:58px;border-radius:22px;
+  border:2px solid rgba(255,255,255,.18);
+  background:rgba(13,5,0,.9);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  position:relative;overflow:hidden;
+}
+.game_action_btn .gab_fill{
+  position:absolute;left:0;bottom:0;height:100%;width:0%;opacity:.3;
+  border-radius:22px;transition:width .06s linear;
+}
+.game_action_btn .gab_icon{font-size:18px;position:relative;z-index:1;}
+.game_action_btn .gab_label{font-size:9px;font-weight:800;letter-spacing:1px;position:relative;z-index:1;color:#ffe0c0;}
+.btn_exit{border-color:rgba(255,51,85,.4);}.btn_exit .gab_fill{background:var(--red);}
+.btn_restart{border-color:rgba(255,106,0,.5);}.btn_restart .gab_fill{background:var(--orange);}
+.game_action_btn.active{filter:brightness(1.5);}
+ 
+#gesture_strip{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  background:rgba(13,5,0,.88);border:1px solid rgba(255,106,0,.2);
+  border-radius:16px;padding:8px 20px;
+  color:#996633;font-size:11px;font-weight:700;letter-spacing:.5px;
+  display:flex;gap:18px;align-items:center;backdrop-filter:blur(4px);
+  white-space:nowrap;
+}
+#gesture_strip span{color:var(--orange2);}
+ 
+#challenge_hud{
+  position:absolute;top:16px;left:16px;
+  background:rgba(13,5,0,.9);border:1.5px solid rgba(255,106,0,.3);
+  border-radius:18px;padding:12px 18px;color:#ffe0c0;font-size:13px;
+  backdrop-filter:blur(8px);min-width:170px;display:none;
+}
+#challenge_hud .ch_name{font-family:'Boogaloo',cursive;font-size:17px;color:var(--orange2);margin-bottom:4px;}
+#challenge_hud .ch_goal{font-size:10px;color:#886644;margin-bottom:4px;}
+#challenge_hud .ch_progress{font-size:12px;color:#ffb347;font-weight:800;margin-bottom:8px;}
+.ch_timer{font-family:'Boogaloo',cursive;font-size:44px;line-height:1;}
+.timer_ok{color:var(--green);}
+.timer_warn{color:var(--gold);}
+.timer_crit{color:var(--red);animation:blink .5s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+ 
+.ch_prog_bar{
+  width:100%;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden;margin-bottom:6px;
+}
+.ch_prog_fill{
+  height:100%;background:linear-gradient(90deg,var(--orange),var(--gold));
+  border-radius:4px;transition:width .3s ease;
+}
+ 
+#tetris_hud{
+  position:absolute;top:16px;left:16px;
+  background:rgba(13,5,0,.9);border:1.5px solid rgba(255,0,255,.3);
+  border-radius:18px;padding:14px 18px;color:#ffe0c0;
+  display:none;min-width:140px;backdrop-filter:blur(8px);
+}
+.th_row{display:flex;justify-content:space-between;align-items:baseline;margin:3px 0;}
+.th_label{font-size:9px;color:#aa66ff;font-weight:800;letter-spacing:1px;}
+.th_val{font-family:'Boogaloo',cursive;font-size:26px;color:var(--magenta);}
+ 
+#tetris_gesture_guide{
+  position:absolute;top:16px;right:140px;
+  background:rgba(13,5,0,.88);border:1px solid rgba(255,0,255,.2);
+  border-radius:14px;padding:10px 14px;
+  display:none;min-width:170px;backdrop-filter:blur(4px);
+}
+.tgg_row{font-size:10px;color:rgba(255,200,255,.7);margin:3px 0;font-weight:700;}
+.tgg_row span{color:var(--magenta);}
+ 
+#rubik_hud{
+  position:absolute;top:16px;left:16px;
+  background:rgba(13,5,0,.9);border:1.5px solid rgba(255,215,0,.3);
+  border-radius:18px;padding:14px 18px;color:#ffe0c0;
+  display:none;min-width:150px;backdrop-filter:blur(8px);
+}
+.rh_row{display:flex;justify-content:space-between;align-items:baseline;margin:3px 0;}
+.rh_label{font-size:9px;color:#ffcc44;font-weight:800;letter-spacing:1px;}
+.rh_val{font-family:'Boogaloo',cursive;font-size:22px;color:var(--gold);}
+ 
+/* Rubik help tokens display */
+#rubik_help_tokens{
+  position:absolute;top:16px;right:140px;
+  background:rgba(13,5,0,.92);border:2px solid rgba(255,215,0,.4);
+  border-radius:18px;padding:14px 18px;
+  display:none;backdrop-filter:blur(4px);text-align:center;min-width:160px;
+}
+.rht_title{font-size:10px;color:#ffcc44;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;display:block;}
+.rht_tokens{display:flex;justify-content:center;gap:8px;margin-bottom:10px;}
+.rht_token{
+  width:34px;height:34px;border-radius:50%;
+  border:2px solid rgba(255,215,0,.5);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;transition:all .3s;
+}
+.rht_token.active{background:rgba(255,215,0,.2);border-color:var(--gold);box-shadow:0 0 12px rgba(255,215,0,.4);}
+.rht_token.used{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);opacity:.35;}
+.rht_ring{
+  width:70px;height:70px;border-radius:50%;border:3px solid rgba(255,215,0,.5);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  position:relative;overflow:hidden;margin:0 auto 6px;
+}
+.rht_ring_fill{position:absolute;inset:0;border-radius:50%;transform:scaleY(0);transform-origin:bottom;transition:transform .06s linear;opacity:.4;background:var(--gold);}
+.rht_ring_icon{font-size:22px;position:relative;z-index:1;}
+.rht_ring_label{font-size:8px;font-weight:800;letter-spacing:.5px;position:relative;z-index:1;color:var(--gold);margin-top:2px;}
+.rht_ring.slapping{border-color:rgba(255,255,255,.9)!important;transform:scale(1.1);}
+.rht_hint{font-size:9px;color:rgba(255,220,100,.4);margin-top:4px;}
+.rht_solving_label{font-size:11px;color:var(--green);font-weight:800;margin-top:6px;display:none;}
+ 
+#rubik_guide{
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  background:rgba(13,5,0,.88);border:1px solid rgba(255,215,0,.2);
+  border-radius:16px;padding:10px 22px;color:#ffe082;font-size:11px;
+  display:none;text-align:center;line-height:1.9;backdrop-filter:blur(4px);
+}
+ 
+/* ═══════════════════════════════════
+   OVERLAYS
+═══════════════════════════════════ */
+@keyframes popIn{from{transform:scale(.7) translateY(30px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+.overlay{
+  position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(4px);
+}
+.card{
+  background:linear-gradient(145deg,#1a0800,#0d0500);border-radius:28px;
+  padding:32px 40px;text-align:center;max-width:480px;width:92vw;
+  animation:popIn .4s cubic-bezier(.2,1.4,.6,1) both;
+}
+.card_orange{border:2.5px solid var(--orange);box-shadow:0 0 60px rgba(255,106,0,.3);}
+.card_win{border:2.5px solid var(--green);box-shadow:0 0 60px rgba(0,255,136,.2);}
+.card_lose{border:2.5px solid var(--gold);box-shadow:0 0 60px rgba(255,215,0,.2);}
+.card_cyan{border:2.5px solid var(--orange);box-shadow:0 0 60px rgba(255,106,0,.3);}
+ 
+.card h1{font-family:'Boogaloo',cursive;font-size:28px;color:var(--orange2);margin-bottom:8px;letter-spacing:2px;}
+.card_win h1{color:var(--green);}
+.card h2{font-family:'Boogaloo',cursive;font-size:32px;margin-bottom:8px;letter-spacing:2px;}
+.card_win h2{color:var(--green);}
+.card_lose h2{color:var(--gold);}
+.card_phrase{font-size:15px;font-weight:700;color:#ffd0a0;margin-bottom:6px;line-height:1.5;}
+.card_desc{font-size:12px;color:#aa7744;margin-bottom:6px;line-height:1.5;}
+.card_emoji{font-size:64px;margin-bottom:12px;display:block;}
+.stars{font-size:28px;letter-spacing:5px;margin:8px 0 18px;}
+ 
+.ch_stats{display:flex;gap:16px;justify-content:center;margin:10px 0 18px;}
+.ch_stat_item{
+  background:rgba(255,106,0,.1);border:1px solid rgba(255,106,0,.25);
+  border-radius:12px;padding:8px 14px;display:flex;flex-direction:column;align-items:center;gap:2px;
+}
+.ch_stat_label{font-size:9px;font-weight:900;color:rgba(255,180,70,.6);letter-spacing:1px;text-transform:uppercase;}
+.ch_stat_val{font-family:'Boogaloo',cursive;font-size:22px;color:var(--amber);}
+ 
+.palm_row{display:flex;justify-content:center;align-items:flex-start;gap:24px;margin:14px 0 8px;}
+.palm_zone{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.palm_ring{
+  width:90px;height:90px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  position:relative;overflow:hidden;transition:border-color .2s,transform .15s;
+}
+.palm_ring .pr_fill{position:absolute;inset:0;border-radius:50%;transform:scaleY(0);transform-origin:bottom;transition:transform .06s linear;opacity:.4;}
+.palm_ring .pr_icon{font-size:28px;position:relative;z-index:1;}
+.palm_ring .pr_label{font-size:9px;font-weight:800;letter-spacing:.5px;position:relative;z-index:1;margin-top:2px;}
+.palm_ring.slapping{border-color:rgba(255,255,255,.9)!important;transform:scale(1.1);}
+.pz_play .palm_ring{border-color:rgba(255,106,0,.5);color:var(--orange);}.pz_play .pr_fill{background:var(--orange);}
+.pz_skip .palm_ring{border-color:rgba(255,156,0,.3);color:#cc8844;}.pz_skip .pr_fill{background:#cc8844;}
+.pz_next .palm_ring{border-color:rgba(0,255,136,.4);color:var(--green);}.pz_next .pr_fill{background:var(--green);}
+.pz_retry .palm_ring{border-color:rgba(255,215,0,.4);color:var(--gold);}.pz_retry .pr_fill{background:var(--gold);}
+.palm_or{font-size:11px;color:rgba(255,255,255,.2);margin-top:36px;}
+.palm_hint{font-size:9px;color:rgba(255,255,255,.35);text-align:center;line-height:1.4;}
+ 
+#tetris_gameover{
+  position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.88);backdrop-filter:blur(8px);
+}
+.tetris_go_card{
+  background:linear-gradient(145deg,#1a0800,#0d0500);
+  border:2.5px solid var(--red);border-radius:28px;
+  padding:36px 48px;text-align:center;
+  box-shadow:0 0 80px rgba(255,51,85,.3);
+  animation:popIn .4s cubic-bezier(.2,1.4,.6,1) both;
+}
+.tetris_go_title{font-family:'Boogaloo',cursive;font-size:56px;color:var(--red);letter-spacing:4px;text-shadow:0 0 40px rgba(255,51,85,.6);}
+.tetris_go_score{font-family:'Boogaloo',cursive;font-size:32px;color:var(--gold);margin:8px 0;}
+.tetris_go_sub{font-size:14px;color:#cc8844;margin-bottom:8px;}
+.tetris_go_phrase{font-size:16px;color:#ffd0a0;font-weight:700;margin-bottom:24px;line-height:1.5;}
+ 
+.tgo_palm_row{display:flex;justify-content:center;align-items:flex-start;gap:28px;margin:16px 0 8px;}
+.tgo_palm_zone{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.tgo_palm_ring{
+  width:90px;height:90px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  position:relative;overflow:hidden;transition:border-color .2s,transform .15s;
+  border:3px solid rgba(255,255,255,.2);
+}
+.tgo_palm_ring .tpr_fill{position:absolute;inset:0;border-radius:50%;transform:scaleY(0);transform-origin:bottom;transition:transform .06s linear;opacity:.4;}
+.tgo_palm_ring .tpr_icon{font-size:28px;position:relative;z-index:1;}
+.tgo_palm_ring .tpr_label{font-size:9px;font-weight:800;letter-spacing:.5px;position:relative;z-index:1;margin-top:2px;}
+.tgo_palm_ring.slapping{border-color:rgba(255,255,255,.9)!important;transform:scale(1.1);}
+.tgo_pz_restart .tgo_palm_ring{border-color:rgba(255,106,0,.5);color:var(--orange);}.tgo_pz_restart .tpr_fill{background:var(--orange);}
+.tgo_pz_menu .tgo_palm_ring{border-color:rgba(255,51,85,.5);color:var(--red);}.tgo_pz_menu .tpr_fill{background:var(--red);}
+.tgo_palm_hint{font-size:9px;color:rgba(255,255,255,.35);text-align:center;}
+.tgo_palm_or{font-size:11px;color:rgba(255,255,255,.2);margin-top:36px;}
+ 
+#music_bar{
+  position:fixed;bottom:60px;right:16px;z-index:70;
+  background:rgba(13,5,0,.9);border:1px solid rgba(255,106,0,.25);
+  border-radius:30px;padding:6px 14px;display:flex;align-items:center;gap:8px;
+  color:#cc8844;font-size:11px;font-weight:700;backdrop-filter:blur(4px);
+}
+#music_icon{font-size:16px;animation:spin 2s linear infinite;}
+#music_title{max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--orange2);}
+#music_toggle{background:none;border:none;cursor:pointer;font-size:16px;color:#fff;padding:2px 4px;}
+@keyframes spin{0%{transform:rotate(0);}100%{transform:rotate(360deg);}}
+ 
+#result_overlay{display:none;}
+</style>
+</head>
+<body>
+ 
+<video id="input_video" autoplay playsinline muted></video>
+<canvas id="three_canvas"></canvas>
+<canvas id="biometric_canvas"></canvas>
+<canvas id="tetris_canvas"></canvas>
+<canvas id="rubik_canvas"></canvas>
+<div id="finger_cursor"></div>
+<div id="toast"></div>
+ 
+<a id="social_badge" href="https://www.instagram.com/hydem._?igsh=MXNiOGp5dTJ0Zjc4ZA==" target="_blank" rel="noopener">
+  <div class="sb_icon">📸</div>
+  <div class="sb_text">
+    <span class="sb_name">@hydem._</span>
+    <span class="sb_sub">Más info · Desarrolladora</span>
+  </div>
+</a>
+ 
+<div id="music_bar">
+  <span id="music_icon">🎵</span>
+  <span id="music_title">DashFULL</span>
+  <button id="music_toggle" onclick="toggleMusic()">⏸</button>
+</div>
+ 
+<audio id="audio_menu" loop><source src="sounds/DashFULL.mp3" type="audio/mpeg"></audio>
+<audio id="audio_free" loop><source src="sounds/Stereo MadnessGD.mp3" type="audio/mpeg"></audio>
+<audio id="audio_tetris" loop><source src="sounds/aespa HoldOnTight.mp3" type="audio/mpeg"></audio>
+<audio id="audio_rubik" loop><source src="sounds/Alan Walker - The Spectre.mp3" type="audio/mpeg"></audio>
+<audio id="audio_win"><source src="sounds/WIN.mp3" type="audio/mpeg"></audio>
+ 
+<!-- ═══════════ MENU SCREEN ═══════════ -->
+<div id="menu_screen">
+  <div class="ember e1"></div><div class="ember e2"></div><div class="ember e3"></div>
+  <div class="ember e4"></div><div class="ember e5"></div><div class="ember e6"></div>
+ 
+  <div class="logo_wrap">
+    <div class="logo_cubes_row">
+      <svg width="40" height="40" viewBox="0 0 40 40" style="animation:cubeFloat 2s ease-in-out infinite;animation-delay:0s"><rect x="4" y="4" width="32" height="32" rx="6" fill="#ff6a00"/><circle cx="14" cy="16" r="3" fill="#330e00"/><circle cx="26" cy="16" r="3" fill="#330e00"/><path d="M14 26 Q20 30 26 26" stroke="#330e00" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="40" height="40" viewBox="0 0 40 40" style="animation:cubeFloat 2s ease-in-out infinite;animation-delay:.2s"><rect x="4" y="4" width="32" height="32" rx="6" fill="#ffb347"/><circle cx="14" cy="16" r="3" fill="#332000"/><circle cx="26" cy="16" r="3" fill="#332000"/><path d="M14 26 Q20 30 26 26" stroke="#332000" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="40" height="40" viewBox="0 0 40 40" style="animation:cubeFloat 2s ease-in-out infinite;animation-delay:.4s"><rect x="4" y="4" width="32" height="32" rx="6" fill="#ff4500"/><circle cx="14" cy="16" r="3" fill="#2a0a00"/><circle cx="26" cy="16" r="3" fill="#2a0a00"/><path d="M14 26 Q20 30 26 26" stroke="#2a0a00" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <svg width="40" height="40" viewBox="0 0 40 40" style="animation:cubeFloat 2s ease-in-out infinite;animation-delay:.6s"><rect x="4" y="4" width="32" height="32" rx="6" fill="#ffd700"/><circle cx="14" cy="16" r="3" fill="#332800"/><circle cx="26" cy="16" r="3" fill="#332800"/><path d="M14 26 Q20 30 26 26" stroke="#332800" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </div>
+    <div class="logo_title">DASH LEVELS</div>
+    <div class="logo_subtitle">Construye · Juega · ¡Con tus manos!</div>
+  </div>
+ 
+  <div class="gesture_legend">
+    <div class="gl_bubble"><span>👆</span> Señala para apuntar</div>
+    <div class="gl_bubble"><span>🖐</span> Palma = seleccionar</div>
+    <div class="gl_bubble"><span>🤏</span> Pellizca = construir</div>
+    <div class="gl_bubble"><span>✌️</span> Paz = cambiar color</div>
+  </div>
+ 
+  <div class="mode_cards">
+    <div class="mode_card card_build" id="menuCard_build" data-mode="build">
+      <div class="mc_badge">🔥 HOT</div>
+      <div class="mc_emoji">🧱</div>
+      <div class="mc_name">RETOS</div>
+      <div class="mc_desc">Construye figuras con tiempo y desafíos</div>
+      <div class="mc_ring" id="menuRing_build"><div class="mc_ring_fill"></div><div class="mc_ring_icon">🖐</div></div>
+      <div class="mc_hint">Sostén la palma aquí</div>
+    </div>
+    <div class="mode_card card_free" id="menuCard_free" data-mode="free">
+      <div class="mc_emoji">🌟</div>
+      <div class="mc_name">LIBRE</div>
+      <div class="mc_desc">Crea sin límites ni tiempo</div>
+      <div class="mc_ring" id="menuRing_free"><div class="mc_ring_fill"></div><div class="mc_ring_icon">🖐</div></div>
+      <div class="mc_hint">Sostén la palma aquí</div>
+    </div>
+    <div class="mode_card card_tetris" id="menuCard_tetris" data-mode="tetris">
+      <div class="mc_emoji">🎮</div>
+      <div class="mc_name">TETRIS</div>
+      <div class="mc_desc">Baja piezas con gestos de la mano</div>
+      <div class="mc_ring" id="menuRing_tetris"><div class="mc_ring_fill"></div><div class="mc_ring_icon">🖐</div></div>
+      <div class="mc_hint">Sostén la palma aquí</div>
+    </div>
+    <div class="mode_card card_rubik" id="menuCard_rubik" data-mode="rubik">
+      <div class="mc_emoji">🎲</div>
+      <div class="mc_name">RUBIK 2x2</div>
+      <div class="mc_desc">Resuelve el cubo deslizando dedos</div>
+      <div class="mc_ring" id="menuRing_rubik"><div class="mc_ring_fill"></div><div class="mc_ring_icon">🖐</div></div>
+      <div class="mc_hint">Sostén la palma aquí</div>
+    </div>
+  </div>
+ 
+  <div class="menu_gesture_hint">🖐 Sostén la palma sobre una opción para seleccionar &nbsp;·&nbsp; 👆 Señala para apuntar</div>
+</div>
+ 
+<!-- ═══════════ CHALLENGE INTRO OVERLAY ═══════════ -->
+<div id="challenge_intro">
+  <div class="ch_intro_card">
+    <span class="chi_emoji" id="chi_emoji">🚀</span>
+    <div class="chi_title" id="chi_title">COHETE</div>
+    <div class="chi_desc" id="chi_desc">¡Construye un cohete espacial!</div>
+    <div class="chi_goal_box">
+      <div class="chi_goal_label">Debes colocar</div>
+      <div class="chi_goal_num" id="chi_goal_num">10</div>
+      <div class="chi_goal_unit">cubos para ganar</div>
+    </div>
+    <div class="chi_time_row">⏱️ Tiempo: <span class="chi_time_val" id="chi_time_val">1:30</span></div>
+    <div class="chi_hint" id="chi_hint">💡 Pon cubos uno sobre otro<br>🤏 Pellizca = construir &nbsp;·&nbsp; 🖐 Palma = soltar &nbsp;·&nbsp; ✌️ = cambiar color</div>
+    <div class="chi_start_ring" id="chiStartRing">
+      <div class="csr_fill" id="csr_fill"></div>
+      <div class="csr_icon">🖐</div>
+      <div class="csr_label">¡INICIAR!</div>
+    </div>
+    <div class="chi_start_hint">Sostén la palma aquí para comenzar</div>
+  </div>
+</div>
+ 
+<!-- ═══════════ GAME SCREEN ═══════════ -->
+<div id="game_screen">
+  <div id="game_topbar">
+    <span class="tb_title" id="tb_title">DASH LEVELS</span>
+    <span class="tb_stat">Cubos: <span class="tb_val" id="tb_count">0</span></span>
+    <span class="tb_stat">Color: <span class="tb_val" id="tb_color">NARANJA</span></span>
+  </div>
+  <div id="game_actions">
+    <div class="game_action_btn btn_exit" id="btn_exit_game"><div class="gab_fill"></div><div class="gab_icon">🏠</div><div class="gab_label">SALIR</div></div>
+    <div class="game_action_btn btn_restart" id="btn_restart_game"><div class="gab_fill"></div><div class="gab_icon">🔄</div><div class="gab_label">REINICIAR</div></div>
+  </div>
+  <div id="challenge_hud">
+    <div class="ch_name" id="ch_hud_name">🚀 COHETE</div>
+    <div class="ch_goal" id="ch_hud_goal">Coloca 10 cubos</div>
+    <div class="ch_progress" id="ch_hud_progress">0 / 10 cubos ✨</div>
+    <div class="ch_prog_bar"><div class="ch_prog_fill" id="ch_prog_fill" style="width:0%"></div></div>
+    <div class="ch_timer timer_ok" id="ch_hud_timer">1:30</div>
+  </div>
+  <div id="tetris_hud">
+    <div class="th_row"><span class="th_label">PUNTOS</span><span class="th_val" id="tet_score">0</span></div>
+    <div class="th_row"><span class="th_label">LÍNEAS</span><span class="th_val" id="tet_lines">0</span></div>
+    <div class="th_row"><span class="th_label">NIVEL</span><span class="th_val" id="tet_level">1</span></div>
+  </div>
+  <div id="tetris_gesture_guide">
+    <div class="tgg_row"><span>🤏</span> Pellizca = rotar pieza</div>
+    <div class="tgg_row"><span>🖐</span> Palma = caída rápida</div>
+    <div class="tgg_row"><span>✊ Der</span> Puño der = mover →</div>
+    <div class="tgg_row"><span>✊ Izq</span> Puño izq = mover ←</div>
+  </div>
+  <div id="rubik_hud">
+    <div class="rh_row"><span class="rh_label">MOVIMIENTOS</span><span class="rh_val" id="rub_moves">0</span></div>
+    <div class="rh_row"><span class="rh_label">CARA</span><span class="rh_val" id="rub_face">—</span></div>
+    <div class="rh_row"><span class="rh_label">ESTADO</span><span class="rh_val" id="rub_state">LIBRE</span></div>
+  </div>
+ 
+  <!-- Rubik Help Tokens Panel -->
+  <div id="rubik_help_tokens">
+    <span class="rht_title">🪄 AYUDAS DISPONIBLES</span>
+    <div class="rht_tokens">
+      <div class="rht_token active" id="rht_token_0">🪄</div>
+      <div class="rht_token active" id="rht_token_1">🪄</div>
+      <div class="rht_token active" id="rht_token_2">🪄</div>
+    </div>
+    <div class="rht_ring" id="rubikHelpRing">
+      <div class="rht_ring_fill" id="rubikHelpFill"></div>
+      <div class="rht_ring_icon">🖐</div>
+      <div class="rht_ring_label">¡USAR!</div>
+    </div>
+    <div class="rht_hint">Sostén palma = resolver una cara</div>
+    <div class="rht_solving_label" id="rht_solving">✨ Resolviendo...</div>
+  </div>
+ 
+  <div id="gesture_strip">
+    <span>👆</span> Apunta &nbsp;|&nbsp;
+    <span>🤏</span> Pellizca = construir &nbsp;|&nbsp;
+    <span>🖐</span> Palma = soltar &nbsp;|&nbsp;
+    <span>✌️</span> = color
+  </div>
+  <div id="rubik_guide">
+    <strong>🎲 RUBIK 2×2 —</strong>
+    🖐 Palma + mover = rotar cubo &nbsp;|&nbsp;
+    👆 Desliza = girar caras &nbsp;|&nbsp;
+    🤏 Pellizca = giro rápido &nbsp;|&nbsp;
+    🪄 3 ayudas: sostén palma en panel = resolver cara
+  </div>
+</div>
+ 
+<!-- ═══════════ OVERLAY: RESULT ═══════════ -->
+<div class="overlay" id="result_overlay">
+  <div class="card" id="result_card">
+    <span class="card_emoji" id="res_emoji">🏆</span>
+    <h2 id="res_title">¡Ganaste!</h2>
+    <div class="stars" id="res_stars">⭐⭐⭐</div>
+    <div class="card_phrase" id="res_phrase">¡Increíble!</div>
+    <div class="palm_row">
+      <div class="palm_zone pz_next">
+        <div class="palm_ring" id="pzr_next"><div class="pr_fill"></div><div class="pr_icon">🖐</div><div class="pr_label">SIGUIENTE</div></div>
+        <div class="palm_hint">Sostén palma aquí</div>
+      </div>
+      <div class="palm_or">ó</div>
+      <div class="palm_zone pz_retry">
+        <div class="palm_ring" id="pzr_retry"><div class="pr_fill"></div><div class="pr_icon">✋</div><div class="pr_label">REPETIR</div></div>
+        <div class="palm_hint">Sostén palma aquí</div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ═══════════ TETRIS GAME OVER ═══════════ -->
+<div id="tetris_gameover">
+  <div class="tetris_go_card">
+    <div class="tetris_go_title">💀 GAME OVER</div>
+    <div class="tetris_go_score" id="tgo_score">0 pts</div>
+    <div class="tetris_go_sub">¡Casi llegas!</div>
+    <div class="tetris_go_phrase" id="tgo_phrase">¡Los grandes jugadores siempre vuelven a intentarlo! 🔥</div>
+    <div class="tgo_palm_row">
+      <div class="tgo_palm_zone tgo_pz_restart">
+        <div class="tgo_palm_ring" id="tgo_ring_restart">
+          <div class="tpr_fill"></div>
+          <div class="tpr_icon">🖐</div>
+          <div class="tpr_label">REINICIAR</div>
+        </div>
+        <div class="tgo_palm_hint">Sostén palma aquí</div>
+      </div>
+      <div class="tgo_palm_or">ó</div>
+      <div class="tgo_palm_zone tgo_pz_menu">
+        <div class="tgo_palm_ring" id="tgo_ring_menu">
+          <div class="tpr_fill"></div>
+          <div class="tpr_icon">🏠</div>
+          <div class="tpr_label">MENÚ</div>
+        </div>
+        <div class="tgo_palm_hint">Sostén palma aquí</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;color:#886644;font-size:11px;">O usa 🤏 Pellizca para reiniciar rápido</div>
+  </div>
+</div>
+ 
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* =========================================================
+   MUSIC MANAGER
+========================================================= */
+let currentAudio = null, musicMuted = false;
+function playMusic(id, trackName) {
+  if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; }
+  currentAudio = document.getElementById(id);
+  if (!currentAudio) return;
+  document.getElementById('music_title').textContent = trackName;
+  if (!musicMuted) { currentAudio.volume = 0.45; currentAudio.play().catch(() => {}); }
+}
+function stopMusic() { if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; } }
+function toggleMusic() {
+  musicMuted = !musicMuted;
+  document.getElementById('music_toggle').textContent = musicMuted ? '▶' : '⏸';
+  if (musicMuted) { if (currentAudio) currentAudio.pause(); }
+  else { if (currentAudio) currentAudio.play().catch(() => {}); }
+}
+function playWin() {
+  if (currentAudio) currentAudio.pause();
+  const win = document.getElementById('audio_win');
+  win.volume = 0.7; win.currentTime = 0; win.play().catch(() => {});
+  win.onended = () => { if (currentAudio && !musicMuted) currentAudio.play().catch(() => {}); };
+}
+document.addEventListener('click', () => { if (!currentAudio) playMusic('audio_menu', 'DashFULL'); }, { once: true });
+ 
+/* =========================================================
+   GLOBAL STATE
+   FIX: currentMode must be 'build' when in build/challenge mode
+========================================================= */
+let currentMode = 'menu';
+let challengeMode = false;
+ 
+/* =========================================================
+   TOAST
+========================================================= */
+function showToast(msg, dur=1800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => { t.style.display = 'none'; }, dur);
+}
+ 
+/* =========================================================
+   CHALLENGES
+========================================================= */
+const CHALLENGES = [
+  { id:0, emoji:"🚀", name:"COHETE", time:90, minVoxels:10, desc:"¡Construye un cohete espacial!", hint:"💡 Pon cubos uno sobre otro\n🎯 ¡Haz una torre alta con al menos 10 cubos!",
+    winPhrases:["¡Eres un astronauta genial! 🚀","¡3, 2, 1... DESPEGUE! 🌟","¡Tu cohete llegó a las estrellas! ✨"],
+    losePhrases:["¡No te rindas! Los cohetes necesitan práctica 🚀","¡Casi despegaste! Inténtalo una vez más ✨","¡Los astronautas nunca se rinden! 💪"] },
+  { id:1, emoji:"🏠", name:"CASITA", time:90, minVoxels:8, desc:"¡Construye una casita acogedora!", hint:"💡 Haz paredes y el techo\n🎯 ¡Necesitas al menos 8 cubos!",
+    winPhrases:["¡Eres un arquitecto increíble! 🏠","¡Tu casita es la más linda! 🌟","¡Hogar dulce hogar! 🏡"],
+    losePhrases:["¡Los arquitectos practican mucho! 🏠","¡Cada intento te hace experto! 🔨","¡La próxima vez construyes un palacio! 👑"] },
+  { id:2, emoji:"🌈", name:"ARCOÍRIS", time:120, minVoxels:15, desc:"¡Dibuja un arcoíris con cubos!", hint:"💡 Cambia colores con ✌️\n🎯 ¡Necesitas al menos 15 cubos de colores!",
+    winPhrases:["¡El artista más colorido del mundo! 🌈","¡ESPECTACULAR! 🎨","¡Picasso estaría orgulloso! 🎭"],
+    losePhrases:["¡Los arcoíris necesitan muchos colores! 🌈","¡El arte necesita práctica! 🎨","¡Tú puedes hacerlo más brillante! ✨"] },
+  { id:3, emoji:"⭐", name:"ESTRELLA", time:60, minVoxels:6, desc:"¡Construye una estrella brillante!", hint:"💡 Coloca cubos en forma de X\n🎯 ¡Con solo 6 cubos puedes lograrlo!",
+    winPhrases:["¡Eres una SUPERESTRELLA! ⭐","¡Brillas con luz propia! ✨","¡El cielo te queda pequeño! 🌌"],
+    losePhrases:["¡Las estrellas brillan con cada intento! ⭐","¡Casi lo logras! 🌟","¡Esa estrella te está esperando! ✨"] },
+  { id:4, emoji:"🎁", name:"REGALO", time:75, minVoxels:9, desc:"¡Arma una caja de regalo!", hint:"💡 Haz un cuadrado y la tapa\n🎯 ¡9 cubos y el regalo estará listo!",
+    winPhrases:["¡Qué regalo tan hermoso! 🎁","¡Ese regalo está lleno de magia! 🎀","¡El mejor regalo eres tú! 💝"],
+    losePhrases:["¡Los mejores regalos llevan su tiempo! 🎁","¡El regalo bonito es el que haces con esfuerzo! 💪","¡No pares, casi está listo! 🎀"] }
+];
+let currentChalIdx = 0;
+let challengeActive = false, challengeTimer = 0, challengeInterval = null;
+ 
+/* =========================================================
+   CHALLENGE INTRO PALM
+========================================================= */
+const CHI_HOLD = 600;
+let chiProgress = 0, chiTriggered = false;
+ 
+function updateChallengeIntroHand(lH, rH) {
+  if (document.getElementById('challenge_intro').style.display !== 'flex') return;
+  const ph = rH || lH; if (!ph) { chiProgress = Math.max(chiProgress - 20, 0); updateChiRing(); return; }
+  const isPalm = isPalmOpen(ph);
+  const ring = document.getElementById('chiStartRing');
+  if (isPalm && !chiTriggered) {
+    chiProgress = Math.min(chiProgress + 20, CHI_HOLD);
+    updateChiRing();
+    ring.classList.add('slapping');
+    if (chiProgress >= CHI_HOLD) {
+      chiTriggered = true;
+      ring.classList.remove('slapping');
+      document.getElementById('challenge_intro').style.display = 'none';
+      startChallenge(currentChalIdx);
+    }
+  } else {
+    ring.classList.remove('slapping');
+    if (!chiTriggered) { chiProgress = Math.max(chiProgress - 20, 0); updateChiRing(); }
+  }
+}
+function updateChiRing() {
+  const fill = document.getElementById('csr_fill');
+  if (fill) fill.style.transform = `scaleY(${chiProgress / CHI_HOLD})`;
+}
+function showChallengeIntro(idx) {
+  chiProgress = 0; chiTriggered = false;
+  const c = CHALLENGES[idx];
+  document.getElementById('chi_emoji').textContent = c.emoji;
+  document.getElementById('chi_title').textContent = c.name;
+  document.getElementById('chi_desc').textContent = c.desc;
+  document.getElementById('chi_goal_num').textContent = c.minVoxels;
+  const m = Math.floor(c.time / 60), s = c.time % 60;
+  document.getElementById('chi_time_val').textContent = m + ':' + String(s).padStart(2,'0');
+  document.getElementById('chi_hint').innerHTML = c.hint.replace(/\n/g,'<br>');
+  const fill = document.getElementById('csr_fill');
+  if (fill) fill.style.transform = 'scaleY(0)';
+  const ring = document.getElementById('chiStartRing');
+  if (ring) ring.classList.remove('slapping');
+  document.getElementById('challenge_intro').style.display = 'flex';
+}
+ 
+/* =========================================================
+   THREE.JS SETUP
+========================================================= */
+const videoEl = document.getElementById('input_video');
+const bioCanvas = document.getElementById('biometric_canvas');
+const bioCtx = bioCanvas.getContext('2d');
+const scene = new THREE.Scene();
+const cam3 = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three_canvas'), antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+const voxelGroup = new THREE.Group(); scene.add(voxelGroup);
+const curSketch = new THREE.Group(); voxelGroup.add(curSketch);
+const placedVoxels = new Map();
+const GS = 1.2;
+const crosshair = new THREE.Mesh(
+  new THREE.BoxGeometry(GS, GS, GS),
+  new THREE.MeshBasicMaterial({ color: 0xff6a00, wireframe: true, transparent: true, opacity: .5 })
+);
+scene.add(crosshair);
+scene.add(new THREE.AmbientLight(0xffffff, .6));
+const sun = new THREE.DirectionalLight(0xffffff, 1); sun.position.set(5, 5, 5); scene.add(sun);
+cam3.position.z = 20;
+ 
+const colorPalette = [0xff6a00,0xff0000,0x0000ff,0x00ff00,0xffff00,0xff00ff,0xffa500,0x800080,0x00ff7f,0xff1493,0x7fff00,0x40e0d0,0xffd700,0xff4500,0x9370db];
+const colorNames = ['NARANJA','ROJO','AZUL','VERDE','AMARILLO','MAGENTA','NARANJA','MORADO','MENTA','ROSA','LIMA','TURQUESA','DORADO','TOMATE','VIOLETA'];
+let gColorIdx = 0;
+let leftPeaceWas = false, rightPeaceWas = false;
+let rainbowActive = false, gravityEnabled = false;
+ 
+/* =========================================================
+   PALM ZONES (result overlay)
+========================================================= */
+const PALM_HOLD = 420;
+const PZ = {
+  pzr_next:  { action:'next',  progress:0, triggered:false },
+  pzr_retry: { action:'retry', progress:0, triggered:false }
+};
+ 
+const TGO_PZ = {
+  tgo_ring_restart: { action:'restart', progress:0, triggered:false },
+  tgo_ring_menu:    { action:'menu',    progress:0, triggered:false }
+};
+ 
+let wristZ = { Left:[], Right:[] };
+ 
+function gd(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
+ 
+function palmVel(label, z) {
+  const h = wristZ[label]; h.push(z);
+  if (h.length > 8) h.shift();
+  return h.length < 4 ? 0 : h[h.length-1] - h[0];
+}
+ 
+function isPalmOpen(pts) {
+  return pts && pts.length >= 21 && [8,12,16,20].every(t => pts[t].y < pts[t-2].y);
+}
+ 
+function doPalmAction(a) {
+  if (a === 'next') nextChallenge();
+  else if (a === 'retry') retryChallenge();
+}
+ 
+function doTGOPalmAction(a) {
+  if (a === 'restart') { document.getElementById('tetris_gameover').style.display = 'none'; startTetris(); }
+  else if (a === 'menu') { document.getElementById('tetris_gameover').style.display = 'none'; exitToMenu(); }
+}
+ 
+function updatePalmZones(lH, rH) {
+  const resultV = document.getElementById('result_overlay').style.display === 'flex';
+  if (!resultV) return;
+  const actZ = ['pzr_next','pzr_retry'];
+ 
+  let palmX = -1;
+  [lH, rH].forEach(pts => {
+    if (pts && isPalmOpen(pts)) palmX = pts[9].x;
+  });
+ 
+  actZ.forEach((zid, i) => {
+    const st = PZ[zid]; const ring = document.getElementById(zid);
+    if (!ring) return;
+    const fill = ring.querySelector('.pr_fill');
+    const onZone = palmX >= 0 && (i === 0 ? palmX > 0.5 : palmX <= 0.5);
+    if (onZone && !st.triggered) {
+      st.progress = Math.min(st.progress + 22, PALM_HOLD);
+      fill.style.transform = `scaleY(${st.progress / PALM_HOLD})`;
+      ring.classList.add('slapping');
+      if (st.progress >= PALM_HOLD) {
+        st.triggered = true;
+        ring.style.background = 'rgba(255,255,255,.25)';
+        setTimeout(() => { ring.style.background = ''; }, 250);
+        doPalmAction(st.action);
+      }
+    } else {
+      ring.classList.remove('slapping');
+      if (!st.triggered) {
+        st.progress = Math.max(st.progress - 15, 0);
+        fill.style.transform = `scaleY(${st.progress / PALM_HOLD})`;
+      }
+    }
+  });
+}
+ 
+function updateTGOPalmZones(lH, rH) {
+  if (document.getElementById('tetris_gameover').style.display !== 'flex') return;
+  let palmX = -1;
+  [lH, rH].forEach(pts => { if (pts && isPalmOpen(pts)) palmX = pts[9].x; });
+ 
+  const keys = ['tgo_ring_restart','tgo_ring_menu'];
+  keys.forEach((zid, i) => {
+    const st = TGO_PZ[zid]; const ring = document.getElementById(zid);
+    if (!ring) return;
+    const fill = ring.querySelector('.tpr_fill');
+    const onZone = palmX >= 0 && (i === 0 ? palmX > 0.5 : palmX <= 0.5);
+    if (onZone && !st.triggered) {
+      st.progress = Math.min(st.progress + 22, PALM_HOLD);
+      fill.style.transform = `scaleY(${st.progress / PALM_HOLD})`;
+      ring.classList.add('slapping');
+      if (st.progress >= PALM_HOLD) {
+        st.triggered = true;
+        doTGOPalmAction(st.action);
+      }
+    } else {
+      ring.classList.remove('slapping');
+      if (!st.triggered) {
+        st.progress = Math.max(st.progress - 15, 0);
+        fill.style.transform = `scaleY(${st.progress / PALM_HOLD})`;
+      }
+    }
+  });
+}
+ 
+function resetPZ(keys) {
+  keys.forEach(k => { if (PZ[k]) { PZ[k].progress = 0; PZ[k].triggered = false; } });
+  wristZ = { Left:[], Right:[] };
+}
+function resetTGOPZ() {
+  Object.keys(TGO_PZ).forEach(k => { TGO_PZ[k].progress = 0; TGO_PZ[k].triggered = false; });
+}
+ 
+/* =========================================================
+   DRAW HAND SKELETON
+========================================================= */
+function drawHand(ctx, pts, color) {
+  const W = bioCanvas.width, H = bioCanvas.height;
+  const col = color || 'rgba(255,106,0,.7)';
+  ctx.shadowBlur = 10; ctx.shadowColor = col;
+  ctx.beginPath(); ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+  [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
+   [9,10],[10,11],[11,12],[13,14],[14,15],[15,16],
+   [0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17],[0,5]]
+  .forEach(([a,b]) => { ctx.moveTo(pts[a].x*W, pts[a].y*H); ctx.lineTo(pts[b].x*W, pts[b].y*H); });
+  ctx.stroke(); ctx.shadowBlur = 0;
+  pts.forEach((pt, i) => {
+    const x = pt.x*W, y = pt.y*H;
+    if ([4,8,12,16,20].includes(i)) {
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.strokeRect(x-5, y-5, 10, 10);
+    } else {
+      ctx.fillStyle = '#fff'; ctx.fillRect(x-2, y-2, 4, 4);
+    }
+  });
+}
+ 
+/* =========================================================
+   MENU HAND TRACKING
+========================================================= */
+const MENU_HOLD = 500;
+let menuRingProgress = { build:0, free:0, tetris:0, rubik:0 };
+let menuRingTriggered = { build:false, free:false, tetris:false, rubik:false };
+ 
+function handleMenuHands(lH, rH) {
+  bioCtx.clearRect(0, 0, bioCanvas.width, bioCanvas.height);
+  if (lH) drawHand(bioCtx, lH, 'rgba(255,106,0,.7)');
+  if (rH) drawHand(bioCtx, rH, 'rgba(255,200,0,.7)');
+ 
+  updateChallengeIntroHand(lH, rH);
+  if (document.getElementById('challenge_intro').style.display === 'flex') return;
+ 
+  const ph = rH || lH; if (!ph) return;
+  const tip = ph[8];
+  const sx = (1 - tip.x) * window.innerWidth, sy = tip.y * window.innerHeight;
+  const fingerCursor = document.getElementById('finger_cursor');
+  fingerCursor.style.display = 'block';
+  fingerCursor.style.left = sx + 'px'; fingerCursor.style.top = sy + 'px';
+ 
+  const isPalmL = lH ? isPalmOpen(lH) : false;
+  const isPalmR = rH ? isPalmOpen(rH) : false;
+  const isPalm = isPalmL || isPalmR;
+  let hoverSx = sx, hoverSy = sy;
+  if (isPalmL && lH) { hoverSx = (1 - lH[8].x) * window.innerWidth; hoverSy = lH[8].y * window.innerHeight; }
+ 
+  const modes = ['build','free','tetris','rubik'];
+  modes.forEach(m => {
+    const card = document.getElementById('menuCard_' + m);
+    const ring = document.getElementById('menuRing_' + m);
+    if (!card || !ring) return;
+    const r = card.getBoundingClientRect();
+    const ins = hoverSx >= r.left && hoverSx <= r.right && hoverSy >= r.top && hoverSy <= r.bottom;
+    const fill = ring.querySelector('.mc_ring_fill');
+    if (ins && isPalm && !menuRingTriggered[m]) {
+      card.classList.add('hovered');
+      menuRingProgress[m] = Math.min(menuRingProgress[m] + 22, MENU_HOLD);
+      fill.style.transform = `scaleY(${menuRingProgress[m] / MENU_HOLD})`;
+      ring.classList.add('slapping');
+      if (menuRingProgress[m] >= MENU_HOLD) {
+        menuRingTriggered[m] = true;
+        menuRingProgress[m] = 0; fill.style.transform = 'scaleY(0)'; ring.classList.remove('slapping');
+        launchMode(m);
+      }
+    } else {
+      if (!ins) card.classList.remove('hovered');
+      ring.classList.remove('slapping');
+      if (!menuRingTriggered[m]) {
+        menuRingProgress[m] = Math.max(menuRingProgress[m] - 28, 0);
+        fill.style.transform = `scaleY(${menuRingProgress[m] / MENU_HOLD})`;
+      }
+    }
+  });
+  Object.keys(menuRingTriggered).forEach(k => {
+    if (menuRingTriggered[k] && !modes.some(m => m === k && menuRingProgress[m] > 0))
+      menuRingTriggered[k] = false;
+  });
+}
+ 
+/* =========================================================
+   FIX: launchMode now correctly sets currentMode = 'build'
+========================================================= */
+function launchMode(m) {
+  Object.keys(menuRingTriggered).forEach(k => menuRingTriggered[k] = false);
+  Object.keys(menuRingProgress).forEach(k => menuRingProgress[k] = 0);
+  if (m === 'build') {
+    challengeMode = true;
+    currentMode = 'build'; // ← FIX: was missing, caused build hands to not work
+    document.getElementById('menu_screen').style.display = 'none';
+    document.getElementById('game_screen').style.display = 'block';
+    document.getElementById('three_canvas').style.display = 'block';
+    voxelGroup.visible = true;
+    setupBuildHUD();
+    showChallengeIntro(currentChalIdx);
+    playMusic('audio_menu', 'DashFULL');
+  }
+  else if (m === 'free') { challengeMode = false; startGame('free'); }
+  else if (m === 'tetris') { startGame('tetris'); }
+  else if (m === 'rubik') { startGame('rubik'); }
+}
+ 
+/* =========================================================
+   GAME ACTIONS — button hold to activate
+========================================================= */
+const GABBTN_HOLD = 500;
+let gabProgress = { exit:0, restart:0 };
+let gabTriggered = { exit:false, restart:false };
+ 
+function updateGameActionBtns(sx, sy) {
+  const btns = [{ id:'btn_exit_game', key:'exit' }, { id:'btn_restart_game', key:'restart' }];
+  btns.forEach(({ id, key }) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const ins = sx >= r.left && sx <= r.right && sy >= r.top && sy <= r.bottom;
+    const fill = btn.querySelector('.gab_fill');
+    if (ins && !gabTriggered[key]) {
+      btn.classList.add('active');
+      gabProgress[key] = Math.min(gabProgress[key] + 18, GABBTN_HOLD);
+      fill.style.width = (gabProgress[key] / GABBTN_HOLD * 100) + '%';
+      if (gabProgress[key] >= GABBTN_HOLD) {
+        gabTriggered[key] = true; gabProgress[key] = 0; fill.style.width = '0%';
+        if (key === 'exit') exitToMenu();
+        else if (key === 'restart') restartCurrentMode();
+        setTimeout(() => { gabTriggered[key] = false; }, 800);
+      }
+    } else {
+      btn.classList.remove('active');
+      if (!gabTriggered[key]) {
+        gabProgress[key] = Math.max(gabProgress[key] - 30, 0);
+        fill.style.width = (gabProgress[key] / GABBTN_HOLD * 100) + '%';
+      }
+    }
+  });
+}
+ 
+function exitToMenu() {
+  stopAllModes();
+  document.getElementById('game_screen').style.display = 'none';
+  document.getElementById('menu_screen').style.display = 'flex';
+  document.getElementById('result_overlay').style.display = 'none';
+  document.getElementById('tetris_gameover').style.display = 'none';
+  document.getElementById('challenge_intro').style.display = 'none';
+  currentMode = 'menu';
+  playMusic('audio_menu', 'DashFULL');
+  showToast('🏠 Menú principal');
+}
+ 
+function restartCurrentMode() {
+  const m = currentMode;
+  stopAllModes();
+  if (m === 'build' && challengeMode) {
+    currentMode = 'build'; // ← keep mode set correctly
+    document.getElementById('game_screen').style.display = 'block';
+    document.getElementById('three_canvas').style.display = 'block';
+    voxelGroup.visible = true;
+    setupBuildHUD();
+    showChallengeIntro(currentChalIdx);
+  } else if (m === 'build' && !challengeMode) {
+    startGame('free');
+  } else {
+    startGame(m);
+  }
+}
+ 
+function setupBuildHUD() {
+  document.getElementById('tb_title').textContent = '🧱 RETOS';
+  document.getElementById('game_topbar').style.display = 'flex';
+  document.getElementById('challenge_hud').style.display = 'none'; // hidden until challenge starts
+  const strip = document.getElementById('gesture_strip');
+  strip.innerHTML = '<span>🤏</span> Pellizca = construir &nbsp;|&nbsp; <span>🖐</span> Palma = soltar &nbsp;|&nbsp; <span>✌️</span> izq = color';
+  strip.style.display = 'flex';
+}
+ 
+/* =========================================================
+   START GAME
+========================================================= */
+function startGame(m) {
+  currentMode = m;
+  document.getElementById('menu_screen').style.display = 'none';
+  document.getElementById('game_screen').style.display = 'block';
+  document.getElementById('result_overlay').style.display = 'none';
+  document.getElementById('tetris_gameover').style.display = 'none';
+  document.getElementById('challenge_hud').style.display = 'none';
+  document.getElementById('tetris_hud').style.display = 'none';
+  document.getElementById('tetris_gesture_guide').style.display = 'none';
+  document.getElementById('rubik_hud').style.display = 'none';
+  document.getElementById('rubik_guide').style.display = 'none';
+  document.getElementById('rubik_help_tokens').style.display = 'none';
+  document.getElementById('tetris_canvas').style.display = 'none';
+  document.getElementById('rubik_canvas').style.display = 'none';
+  document.getElementById('three_canvas').style.display = 'block';
+  const strip = document.getElementById('gesture_strip');
+  const topbar = document.getElementById('game_topbar');
+ 
+  if (m === 'build') {
+    setupBuildHUD();
+    voxelGroup.visible = true;
+    if (challengeMode) startChallenge(currentChalIdx);
+    playMusic('audio_menu', 'DashFULL');
+  } else if (m === 'free') {
+    document.getElementById('tb_title').textContent = '🌟 LIBRE';
+    topbar.style.display = 'flex';
+    strip.innerHTML = '<span>🤏</span> Pellizca = construir &nbsp;|&nbsp; <span>🖐</span> Palma = soltar &nbsp;|&nbsp; <span>✌️</span> = color';
+    strip.style.display = 'flex';
+    voxelGroup.visible = true;
+    // FIX: free mode also uses build hand logic — set to 'build'
+    currentMode = 'build'; challengeMode = false;
+    playMusic('audio_free', 'Stereo Madness GD'); showToast('🌟 ¡Modo Libre!');
+  } else if (m === 'tetris') {
+    document.getElementById('tetris_hud').style.display = 'block';
+    document.getElementById('tetris_gesture_guide').style.display = 'block';
+    document.getElementById('tetris_canvas').style.display = 'block';
+    document.getElementById('three_canvas').style.display = 'none';
+    topbar.style.display = 'none';
+    strip.innerHTML = '<span>🤏</span> Pellizca = rotar &nbsp;|&nbsp; <span>🖐</span> Palma = caída rápida &nbsp;|&nbsp; <span>✊Der</span> = mover →  &nbsp;|&nbsp; <span>✊Izq</span> = mover ←';
+    strip.style.display = 'flex';
+    voxelGroup.visible = false;
+    startTetris();
+    playMusic('audio_tetris', 'aespa - Hold On Tight');
+    showToast('🎮 ¡Modo Tetris!');
+  } else if (m === 'rubik') {
+    document.getElementById('rubik_hud').style.display = 'block';
+    document.getElementById('rubik_canvas').style.display = 'block';
+    document.getElementById('rubik_guide').style.display = 'block';
+    document.getElementById('rubik_help_tokens').style.display = 'block';
+    topbar.style.display = 'none';
+    strip.innerHTML = '<span>🖐</span> Palma = rotar cubo &nbsp;|&nbsp; <span>👆 desliza</span> = girar cara &nbsp;|&nbsp; <span>🤏</span> = giro B/F &nbsp;|&nbsp; 🪄 3 Ayudas = resolver cara';
+    strip.style.display = 'flex';
+    voxelGroup.visible = false;
+    initRubik2x2();
+    playMusic('audio_rubik', 'Alan Walker - The Spectre');
+    showToast('🎲 ¡Cubo Rubik 2×2! 🪄 Tienes 3 ayudas para resolver caras');
+  }
+}
+ 
+function stopAllModes() {
+  stopTetris(); rubikActive = false;
+  challengeActive = false; clearInterval(challengeInterval);
+  placedVoxels.forEach(v => voxelGroup.remove(v)); placedVoxels.clear();
+  while (curSketch.children.length) curSketch.remove(curSketch.children[0]);
+  document.getElementById('tb_count').textContent = '0';
+  voxelGroup.position.set(0,0,0); voxelGroup.rotation.set(0,0,0);
+  gravityEnabled = false; rainbowActive = false;
+}
+ 
+/* =========================================================
+   CHALLENGE LOGIC
+========================================================= */
+function startChallenge(idx) {
+  currentChalIdx = idx;
+  const c = CHALLENGES[idx];
+  challengeActive = true;
+  placedVoxels.forEach(v => voxelGroup.remove(v)); placedVoxels.clear();
+  while (curSketch.children.length) curSketch.remove(curSketch.children[0]);
+  sketKeys.clear();
+  document.getElementById('tb_count').textContent = '0';
+  challengeTimer = c.time;
+  document.getElementById('ch_hud_name').textContent = c.emoji + ' ' + c.name;
+  document.getElementById('ch_hud_goal').textContent = '🎯 Meta: ' + c.minVoxels + ' cubos';
+  document.getElementById('ch_hud_progress').textContent = '0 / ' + c.minVoxels + ' cubos';
+  document.getElementById('ch_prog_fill').style.width = '0%';
+  updateTimerDisplay();
+  document.getElementById('challenge_hud').style.display = 'block';
+  clearInterval(challengeInterval);
+  challengeInterval = setInterval(() => {
+    if (!challengeActive) return;
+    challengeTimer--; updateTimerDisplay();
+    if (challengeTimer <= 0) endChallenge(false);
+  }, 1000);
+}
+ 
+function updateChallengeProgress() {
+  if (!challengeActive) return;
+  const c = CHALLENGES[currentChalIdx];
+  const cnt = placedVoxels.size;
+  document.getElementById('ch_hud_progress').textContent = cnt + ' / ' + c.minVoxels + ' cubos';
+  const pct = Math.min(cnt / c.minVoxels * 100, 100);
+  document.getElementById('ch_prog_fill').style.width = pct + '%';
+}
+ 
+function updateTimerDisplay() {
+  const el = document.getElementById('ch_hud_timer');
+  const m = Math.floor(challengeTimer / 60), s = challengeTimer % 60;
+  el.textContent = m + ':' + String(s).padStart(2, '0');
+  el.className = 'ch_timer ' + (challengeTimer > 30 ? 'timer_ok' : challengeTimer > 10 ? 'timer_warn' : 'timer_crit');
+}
+ 
+function checkChallengeWin() {
+  if (!challengeActive) return;
+  updateChallengeProgress();
+  if (placedVoxels.size >= CHALLENGES[currentChalIdx].minVoxels) endChallenge(true);
+}
+ 
+function endChallenge(win) {
+  if (!challengeActive) return;
+  challengeActive = false; clearInterval(challengeInterval);
+  document.getElementById('challenge_hud').style.display = 'none';
+  const c = CHALLENGES[currentChalIdx];
+  const ph = win ? c.winPhrases : c.losePhrases;
+  const phrase = ph[Math.floor(Math.random() * ph.length)];
+  document.getElementById('res_emoji').textContent = win ? '🏆' : '😊';
+  document.getElementById('res_title').textContent = win ? '¡GANASTE! ' + c.emoji : '¡Casi lo logras!';
+  document.getElementById('res_stars').textContent = win ? '⭐⭐⭐' : '💪💪💪';
+  document.getElementById('res_phrase').textContent = phrase;
+  const card = document.getElementById('result_card');
+  card.className = win ? 'card card_win' : 'card card_lose';
+  document.getElementById('result_overlay').style.display = 'flex';
+  resetPZ(['pzr_next','pzr_retry']);
+  if (win) { rainbowActive = true; playWin(); setTimeout(() => { rainbowActive = false; }, 4000); }
+}
+ 
+function nextChallenge() {
+  document.getElementById('result_overlay').style.display = 'none';
+  currentChalIdx = (currentChalIdx + 1) % CHALLENGES.length;
+  challengeMode = true;
+  chiProgress = 0; chiTriggered = false;
+  showChallengeIntro(currentChalIdx);
+  showToast('🎯 ' + CHALLENGES[currentChalIdx].emoji + ' ' + CHALLENGES[currentChalIdx].name);
+}
+ 
+function retryChallenge() {
+  document.getElementById('result_overlay').style.display = 'none';
+  chiProgress = 0; chiTriggered = false;
+  showChallengeIntro(currentChalIdx);
+}
+ 
+/* =========================================================
+   VOXEL BUILD HELPERS
+========================================================= */
+function floorY() {
+  const h = 2 * Math.tan(THREE.MathUtils.degToRad(cam3.fov) / 2) * cam3.position.z;
+  return -(h/2) + (GS/2);
+}
+function doGravityFall() {
+  placedVoxels.forEach(v => {
+    v.velocity.set((Math.random()-.5)*.8, .4+Math.random()*.5, (Math.random()-.5)*.8);
+    v.isBouncing = false;
+  });
+}
+let sketKeys = new Set(), pinchStart = null, axisDir = null;
+function addSket(x, y, z) {
+  const k = `${x.toFixed(1)},${y.toFixed(1)},${z.toFixed(1)}`;
+  if (sketKeys.has(k) || placedVoxels.has(k)) return;
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(GS*.98, GS*.98, GS*.98),
+    new THREE.MeshBasicMaterial({ color: colorPalette[gColorIdx], wireframe: true })
+  );
+  m.position.set(x, y, z); curSketch.add(m); sketKeys.add(k);
+}
+function commitVox() {
+  if (curSketch.children.length === 0) return;
+  while (curSketch.children.length) {
+    const f = curSketch.children[0];
+    const k = `${f.position.x.toFixed(1)},${f.position.y.toFixed(1)},${f.position.z.toFixed(1)}`;
+    const cube = makeCube(f.position.x, f.position.y, f.position.z);
+    voxelGroup.add(cube); placedVoxels.set(k, cube); curSketch.remove(f);
+  }
+  sketKeys.clear();
+  const cnt = placedVoxels.size;
+  document.getElementById('tb_count').textContent = cnt;
+  document.getElementById('tb_color').textContent = colorNames[gColorIdx];
+}
+function makeCube(x, y, z) {
+  const g = new THREE.BoxGeometry(GS*.95, GS*.95, GS*.95);
+  const m = new THREE.MeshPhongMaterial({
+    color: 0x110500, emissive: colorPalette[gColorIdx],
+    emissiveIntensity: .4, transparent: true, opacity: .85
+  });
+  const mesh = new THREE.Mesh(g, m);
+  mesh.position.set(x, y, z);
+  mesh.origin = new THREE.Vector3(x, y, z);
+  mesh.velocity = new THREE.Vector3(0, 0, 0);
+  mesh.isBouncing = false;
+  mesh.add(new THREE.LineSegments(
+    new THREE.EdgesGeometry(g),
+    new THREE.LineBasicMaterial({ color: colorPalette[gColorIdx] })
+  ));
+  return mesh;
+}
+ 
+/* =========================================================
+   SMOOTHING
+========================================================= */
+let smoothed = { Left:[], Right:[] };
+function smoothHand(landmarks, label) {
+  if (!smoothed[label].length) { smoothed[label] = landmarks.map(p => ({...p})); }
+  else { landmarks.forEach((p, i) => { const s = smoothed[label][i]; s.x += (p.x-s.x)*.45; s.y += (p.y-s.y)*.45; s.z += (p.z-s.z)*.1; }); }
+  return smoothed[label];
+}
+ 
+/* =========================================================
+   BUILD MODE VARS
+========================================================= */
+let isGrabbing = false, grabT = 0, grabOff = new THREE.Vector3();
+let iBuild = false, buildT = 0;
+let resetT = 0, rotateT = 0, gravT = 0, restT = 0;
+const GRHOLD = 350, INHOLD = 250, RSHOLD = 800, RTHOLD = 800, GVHOLD = 500, PTH = 0.055;
+ 
+function hudCircle(ctx, x, y, p, col) {
+  ctx.beginPath(); ctx.arc(x, y, 32, -Math.PI/2, -Math.PI/2 + Math.PI*2*p);
+  ctx.lineWidth = 5; ctx.strokeStyle = col; ctx.stroke();
+}
+ 
+/* =========================================================
+   TETRIS MODE
+========================================================= */
+const TETRIS_COLS = 12, TETRIS_ROWS = 20;
+const TETRIS_COLORS = ['#00f0ff','#ff0000','#00ff00','#ffd700','#ff00ff','#ff6600','#7fff00','#ff1493'];
+const TETRIS_SHAPES = [
+  [[1,1,1,1]], [[1,1],[1,1]], [[0,1,0],[1,1,1]], [[1,0,0],[1,1,1]],
+  [[0,0,1],[1,1,1]], [[0,1,1],[1,1,0]], [[1,1,0],[0,1,1]]
+];
+ 
+const TETRIS_GO_PHRASES = [
+  "¡Los grandes jugadores siempre vuelven a intentarlo! 🔥",
+  "¡Cada intento te hace más fuerte! 💪",
+  "¡El campeón no es el que nunca falla, sino el que nunca se rinde! ⭐",
+  "¡Estás a un intento de ser imparable! 🚀",
+  "¡El Tetris te espera para demostrarte lo que vales! 🎮",
+  "¡La próxima vez las líneas caerán a tus pies! ✨"
+];
+ 
+let tetrisActive = false, tetrisBoard = [], tetrisPiece = null, tetrisNextPiece = null;
+let tetrisScore = 0, tetrisLines = 0, tetrisLevel = 1, tetrisInterval = null;
+let tetrisPaused = false, tetrisGameOver = false;
+let tetrisPinchWas = false, tetrisPalmWas = false;
+let tetrisFistRWas = false, tetrisFistLWas = false;
+let tetrisMoveThrottle = 0;
+const tetCv = document.getElementById('tetris_canvas');
+const tetCtx = tetCv.getContext('2d');
+ 
+function isFistGesture(hand) {
+  if (!hand) return false;
+  const allCurled = [8,12,16,20].every(t => hand[t].y > hand[t-2].y);
+  const thumbIn = gd(hand[4], hand[9]) < 0.15;
+  return allCurled && thumbIn;
+}
+ 
+function initTetrisBoard() { tetrisBoard = []; for (let r = 0; r < TETRIS_ROWS; r++) tetrisBoard.push(new Array(TETRIS_COLS).fill(0)); }
+function randomPiece() {
+  const idx = Math.floor(Math.random() * TETRIS_SHAPES.length), ci = Math.floor(Math.random() * TETRIS_COLORS.length);
+  return { shape: TETRIS_SHAPES[idx].map(r => [...r]), color: TETRIS_COLORS[ci], x: Math.floor(TETRIS_COLS/2)-1, y: 0 };
+}
+function startTetris() {
+  tetrisActive = true; tetrisGameOver = false; tetrisPaused = false;
+  tetrisScore = 0; tetrisLines = 0; tetrisLevel = 1;
+  document.getElementById('tetris_gameover').style.display = 'none';
+  resetTGOPZ();
+  initTetrisBoard();
+  tetrisPiece = randomPiece(); tetrisNextPiece = randomPiece();
+  updateTetrisHUD(); clearInterval(tetrisInterval);
+  tetrisInterval = setInterval(tetrisStep, 700);
+  if (currentMode !== 'tetris') currentMode = 'tetris';
+}
+function stopTetris() { tetrisActive = false; clearInterval(tetrisInterval); }
+function tetrisStep() {
+  if (!tetrisActive || tetrisPaused || tetrisGameOver) return;
+  if (!canMove(tetrisPiece, 0, 1)) { placePiece(); clearLines(); spawnPiece(); }
+  else tetrisPiece.y++;
+}
+function canMove(piece, dx, dy, rot) {
+  const shape = rot ? rotatePiece(piece.shape) : piece.shape;
+  for (let r = 0; r < shape.length; r++) for (let c = 0; c < shape[r].length; c++) {
+    if (!shape[r][c]) continue;
+    const nx = piece.x+c+dx, ny = piece.y+r+dy;
+    if (nx < 0 || nx >= TETRIS_COLS || ny >= TETRIS_ROWS) return false;
+    if (ny >= 0 && tetrisBoard[ny][nx]) return false;
+  }
+  return true;
+}
+function rotatePiece(shape) {
+  const rows = shape.length, cols = shape[0].length;
+  const rotated = Array.from({length:cols}, () => new Array(rows).fill(0));
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) rotated[c][rows-1-r] = shape[r][c];
+  return rotated;
+}
+function placePiece() {
+  for (let r = 0; r < tetrisPiece.shape.length; r++) for (let c = 0; c < tetrisPiece.shape[r].length; c++) {
+    if (!tetrisPiece.shape[r][c]) continue;
+    const ny = tetrisPiece.y+r, nx = tetrisPiece.x+c;
+    if (ny < 0) {
+      tetrisGameOver = true; clearInterval(tetrisInterval);
+      document.getElementById('tgo_score').textContent = tetrisScore + ' pts';
+      const phrase = TETRIS_GO_PHRASES[Math.floor(Math.random() * TETRIS_GO_PHRASES.length)];
+      document.getElementById('tgo_phrase').textContent = phrase;
+      resetTGOPZ();
+      document.getElementById('tetris_gameover').style.display = 'flex'; return;
+    }
+    tetrisBoard[ny][nx] = tetrisPiece.color;
+  }
+}
+function clearLines() {
+  let cleared = 0;
+  for (let r = TETRIS_ROWS-1; r >= 0; r--) {
+    if (tetrisBoard[r].every(c => c)) { tetrisBoard.splice(r, 1); tetrisBoard.unshift(new Array(TETRIS_COLS).fill(0)); cleared++; r++; }
+  }
+  if (cleared > 0) {
+    tetrisLines += cleared; tetrisScore += cleared*100*tetrisLevel;
+    tetrisLevel = Math.floor(tetrisLines/10) + 1;
+    clearInterval(tetrisInterval); tetrisInterval = setInterval(tetrisStep, Math.max(100, 700 - tetrisLevel*50));
+    updateTetrisHUD();
+    if (cleared >= 4) showToast('🎉 ¡TETRIS! +' + cleared*100*tetrisLevel);
+    else showToast('✨ +' + cleared + ' línea' + (cleared > 1 ? 's' : '') + '!', 800);
+  }
+}
+function spawnPiece() { tetrisPiece = tetrisNextPiece; tetrisNextPiece = randomPiece(); updateTetrisHUD(); }
+function updateTetrisHUD() {
+  document.getElementById('tet_score').textContent = tetrisScore;
+  document.getElementById('tet_lines').textContent = tetrisLines;
+  document.getElementById('tet_level').textContent = tetrisLevel;
+}
+ 
+function drawTetris() {
+  if (!tetrisActive) return;
+  tetCv.width = window.innerWidth; tetCv.height = window.innerHeight;
+  const CW = tetCv.width, CH = tetCv.height;
+  const CELL = Math.min(Math.floor(CH / TETRIS_ROWS * 0.86), Math.floor(CW / TETRIS_COLS * 0.58));
+  const bW = CELL * TETRIS_COLS, bH = CELL * TETRIS_ROWS;
+  const bX = Math.floor((CW - bW) / 2), bY = Math.floor((CH - bH) / 2);
+  tetCtx.fillStyle = 'rgba(13,5,0,.88)'; tetCtx.fillRect(bX-4, bY-4, bW+8, bH+8);
+  tetCtx.strokeStyle = '#ff6a0044'; tetCtx.lineWidth = 2; tetCtx.strokeRect(bX-4, bY-4, bW+8, bH+8);
+  tetCtx.strokeStyle = 'rgba(255,106,0,.07)'; tetCtx.lineWidth = 1;
+  for (let r = 0; r <= TETRIS_ROWS; r++) { tetCtx.beginPath(); tetCtx.moveTo(bX, bY+r*CELL); tetCtx.lineTo(bX+bW, bY+r*CELL); tetCtx.stroke(); }
+  for (let c = 0; c <= TETRIS_COLS; c++) { tetCtx.beginPath(); tetCtx.moveTo(bX+c*CELL, bY); tetCtx.lineTo(bX+c*CELL, bY+bH); tetCtx.stroke(); }
+  for (let r = 0; r < TETRIS_ROWS; r++) for (let c = 0; c < TETRIS_COLS; c++) {
+    if (tetrisBoard[r][c]) {
+      const x = bX+c*CELL, y = bY+r*CELL;
+      tetCtx.shadowBlur = 10; tetCtx.shadowColor = tetrisBoard[r][c];
+      tetCtx.fillStyle = tetrisBoard[r][c]; tetCtx.fillRect(x+1, y+1, CELL-2, CELL-2);
+      tetCtx.shadowBlur = 0;
+      tetCtx.strokeStyle = 'rgba(255,255,255,.3)'; tetCtx.lineWidth = 1.5; tetCtx.strokeRect(x+2, y+2, CELL-4, CELL-4);
+    }
+  }
+  if (tetrisPiece && !tetrisGameOver) {
+    let ghostY = tetrisPiece.y;
+    while (canMove({...tetrisPiece, y:ghostY+1}, 0, 0)) ghostY++;
+    for (let r = 0; r < tetrisPiece.shape.length; r++) for (let c = 0; c < tetrisPiece.shape[r].length; c++) {
+      if (!tetrisPiece.shape[r][c]) continue;
+      const x = bX+(tetrisPiece.x+c)*CELL, y = bY+(ghostY+r)*CELL;
+      tetCtx.strokeStyle = tetrisPiece.color+'55'; tetCtx.lineWidth = 1.5; tetCtx.strokeRect(x+1, y+1, CELL-2, CELL-2);
+    }
+    for (let r = 0; r < tetrisPiece.shape.length; r++) for (let c = 0; c < tetrisPiece.shape[r].length; c++) {
+      if (!tetrisPiece.shape[r][c]) continue;
+      const x = bX+(tetrisPiece.x+c)*CELL, y = bY+(tetrisPiece.y+r)*CELL;
+      tetCtx.shadowBlur = 14; tetCtx.shadowColor = tetrisPiece.color;
+      tetCtx.fillStyle = tetrisPiece.color; tetCtx.fillRect(x+1, y+1, CELL-2, CELL-2);
+      tetCtx.shadowBlur = 0;
+      tetCtx.strokeStyle = 'rgba(255,255,255,.5)'; tetCtx.lineWidth = 1.5; tetCtx.strokeRect(x+2, y+2, CELL-4, CELL-4);
+    }
+  }
+}
+ 
+function handleTetrisHands(lH, rH) {
+  if (!tetrisActive) return;
+  bioCtx.clearRect(0, 0, bioCanvas.width, bioCanvas.height);
+  if (lH) drawHand(bioCtx, lH, 'rgba(255,106,0,.7)');
+  if (rH) drawHand(bioCtx, rH, 'rgba(255,200,0,.7)');
+ 
+  updateTGOPalmZones(lH, rH);
+ 
+  const hand = rH || lH;
+  if (!hand) return;
+ 
+  const tip = hand[8], thb = hand[4];
+  const pinch = gd(thb, tip) < 0.07;
+  const palm = isPalmOpen(hand);
+  const fistR = isFistGesture(rH);
+  const fistL = isFistGesture(lH);
+ 
+  const sx = (1 - tip.x) * window.innerWidth, sy = tip.y * window.innerHeight;
+  const fingerCursor = document.getElementById('finger_cursor');
+  fingerCursor.style.display = 'block'; fingerCursor.style.left = sx+'px'; fingerCursor.style.top = sy+'px';
+  updateGameActionBtns(sx, sy);
+ 
+  if (!tetrisGameOver && !tetrisPaused && tetrisPiece) {
+    tetrisMoveThrottle--;
+ 
+    if (pinch && !tetrisPinchWas) {
+      if (canMove(tetrisPiece, 0, 0, true)) {
+        tetrisPiece.shape = rotatePiece(tetrisPiece.shape);
+        showToast('🔄 Rotar', 500);
+      }
+    }
+ 
+    if (palm && !tetrisPalmWas) {
+      while (canMove(tetrisPiece, 0, 1)) tetrisPiece.y++;
+      placePiece(); clearLines();
+      if (!tetrisGameOver) spawnPiece();
+      showToast('⬇️ Rápido', 500);
+    }
+ 
+    if (tetrisMoveThrottle <= 0) {
+      if (fistR && !tetrisFistRWas) {
+        if (canMove(tetrisPiece, 1, 0)) { tetrisPiece.x += 1; showToast('→', 400); }
+        tetrisMoveThrottle = 6;
+      } else if (fistR && tetrisFistRWas) {
+        if (tetrisMoveThrottle <= 0) {
+          if (canMove(tetrisPiece, 1, 0)) tetrisPiece.x += 1;
+          tetrisMoveThrottle = 10;
+        }
+      }
+      if (fistL && !tetrisFistLWas) {
+        if (canMove(tetrisPiece, -1, 0)) { tetrisPiece.x -= 1; showToast('←', 400); }
+        tetrisMoveThrottle = 6;
+      } else if (fistL && tetrisFistLWas) {
+        if (tetrisMoveThrottle <= 0) {
+          if (canMove(tetrisPiece, -1, 0)) tetrisPiece.x -= 1;
+          tetrisMoveThrottle = 10;
+        }
+      }
+    }
+  } else if (tetrisGameOver && pinch && !tetrisPinchWas) {
+    document.getElementById('tetris_gameover').style.display = 'none';
+    startTetris();
+  }
+ 
+  tetrisPinchWas = pinch;
+  tetrisPalmWas = palm;
+  tetrisFistRWas = fistR;
+  tetrisFistLWas = fistL;
+}
+ 
+/* =========================================================
+   RUBIK 2x2 — FACE-SOLVE HELP SYSTEM
+   3 tokens. Each token = solve one face automatically.
+   Uses iterative face-solving: finds moves to make one face uniform.
+========================================================= */
+let rubikActive = false, rub2Board = null, rubikMoves = 0;
+let rubikIsAnimating = false, rubikViewRotX = 0.3, rubikViewRotY = 0.6;
+let rubikPinchWas = false, rubikSwipeDone = false, rubikTipHistory = [];
+const SWIPE_MIN = 0.055, SWIPE_FRAMES = 10;
+let rubikScene = null, rubikCam = null, rubikRenderer3D = null, rubikGroup = null, rubikCubelets = [];
+const FCOLOR_2D = ['#ffffff','#ffdd00','#ee1111','#ff8800','#1155ff','#00cc44'];
+ 
+// Help token system
+let rubikHelpTokens = 3;           // 3 available help tokens
+let rubikHelpRingProgress = 0;
+let rubikHelpRingTriggered = false;
+const RUBIK_HELP_HOLD = 700;
+let rubikIsSolvingFace = false;
+let rubikFacesSolved = 0;           // track how many faces have been auto-solved
+ 
+function solvedState() { return FCOLOR_2D.map((c) => [c, c, c, c]); }
+ 
+/* ── Update token display ── */
+function updateRubikTokenUI() {
+  for (let i = 0; i < 3; i++) {
+    const el = document.getElementById('rht_token_' + i);
+    if (!el) continue;
+    if (i < rubikHelpTokens) {
+      el.classList.add('active'); el.classList.remove('used');
+    } else {
+      el.classList.remove('active'); el.classList.add('used');
+    }
+  }
+}
+ 
+/* ── Check if a face (index 0-5) is solved (all 4 cells same color) ── */
+function isFaceSolved(faceIdx) {
+  const f = rub2Board[faceIdx];
+  return f[0] === f[1] && f[1] === f[2] && f[2] === f[3];
+}
+ 
+/* ── Get list of unsolved faces ── */
+function getUnsolvedFaces() {
+  return [0,1,2,3,4,5].filter(i => !isFaceSolved(i));
+}
+ 
+/* ── Deep clone board state ── */
+function cloneBoard(b) { return b.map(f => [...f]); }
+ 
+/* ── Apply a sequence of moves to a board copy ── */
+function applyMoves(board, moves) {
+  const saved = rub2Board;
+  rub2Board = board;
+  for (const mv of moves) {
+    doRubikMoveSilent(mv.face, mv.cw);
+  }
+  const result = rub2Board;
+  rub2Board = saved;
+  return result;
+}
+ 
+/* ── Silent move (no animation, no history, no UI) ── */
+function doRubikMoveSilent(face, cw) {
+  if (face === 'U') { rotateFaceArr(0, cw); cycleAdj([{face:2,cells:[0,1]},{face:5,cells:[0,1]},{face:3,cells:[1,0]},{face:4,cells:[0,1]}], cw); }
+  else if (face === 'D') { rotateFaceArr(1, cw); cycleAdj([{face:2,cells:[2,3]},{face:4,cells:[2,3]},{face:3,cells:[3,2]},{face:5,cells:[2,3]}], cw); }
+  else if (face === 'F') { rotateFaceArr(2, cw); cycleAdj([{face:0,cells:[2,3]},{face:5,cells:[0,2]},{face:1,cells:[1,0]},{face:4,cells:[3,1]}], cw); }
+  else if (face === 'B') { rotateFaceArr(3, cw); cycleAdj([{face:0,cells:[1,0]},{face:4,cells:[0,2]},{face:1,cells:[2,3]},{face:5,cells:[3,1]}], cw); }
+  else if (face === 'L') { rotateFaceArr(4, cw); cycleAdj([{face:0,cells:[0,2]},{face:2,cells:[0,2]},{face:1,cells:[0,2]},{face:3,cells:[3,1]}], cw); }
+  else if (face === 'R') { rotateFaceArr(5, cw); cycleAdj([{face:0,cells:[1,3]},{face:3,cells:[2,0]},{face:1,cells:[1,3]},{face:2,cells:[1,3]}], cw); }
+}
+ 
+/* ── BFS to find moves that solve a specific face (max depth 5) ── */
+function findMovesToSolveFace(targetFaceIdx) {
+  const MOVES = [
+    {face:'U',cw:true},{face:'U',cw:false},
+    {face:'D',cw:true},{face:'D',cw:false},
+    {face:'F',cw:true},{face:'F',cw:false},
+    {face:'B',cw:true},{face:'B',cw:false},
+    {face:'L',cw:true},{face:'L',cw:false},
+    {face:'R',cw:true},{face:'R',cw:false},
+  ];
+  // BFS queue: {board, moves[]}
+  const startBoard = cloneBoard(rub2Board);
+  if (isFaceSolved(targetFaceIdx)) return []; // already solved
+ 
+  const queue = [{ board: startBoard, moves: [] }];
+  const visited = new Set();
+  visited.add(JSON.stringify(startBoard[targetFaceIdx]));
+ 
+  const MAX_DEPTH = 6;
+ 
+  while (queue.length > 0) {
+    const { board, moves } = queue.shift();
+    if (moves.length >= MAX_DEPTH) continue;
+ 
+    for (const mv of MOVES) {
+      // apply move to board copy
+      const newBoard = cloneBoard(board);
+      const savedBoard = rub2Board;
+      rub2Board = newBoard;
+      doRubikMoveSilent(mv.face, mv.cw);
+      const resultBoard = rub2Board;
+      rub2Board = savedBoard;
+ 
+      const newMoves = [...moves, mv];
+      const f = resultBoard[targetFaceIdx];
+      if (f[0] === f[1] && f[1] === f[2] && f[2] === f[3]) {
+        return newMoves; // found solution
+      }
+      const key = JSON.stringify(resultBoard[targetFaceIdx]) + moves.length;
+      if (!visited.has(key)) {
+        visited.add(key);
+        queue.push({ board: resultBoard, moves: newMoves });
+      }
+    }
+  }
+  return null; // not found within depth limit
+}
+ 
+/* ── Execute face-solve: find & animate moves to solve one face ── */
+function rubikSolveFaceWithToken() {
+  if (rubikHelpTokens <= 0) {
+    showToast('❌ Sin ayudas disponibles', 1500);
+    return;
+  }
+  if (rubikIsSolvingFace) return;
+ 
+  const unsolved = getUnsolvedFaces();
+  if (unsolved.length === 0) {
+    showToast('✅ ¡El cubo ya está resuelto!', 2000);
+    return;
+  }
+ 
+  // Pick the face closest to solved (fewest unique colors)
+  let bestFace = unsolved[0];
+  let bestScore = 999;
+  for (const fi of unsolved) {
+    const colors = new Set(rub2Board[fi]);
+    if (colors.size < bestScore) { bestScore = colors.size; bestFace = fi; }
+  }
+ 
+  const faceNames = ['Arriba(U)','Abajo(D)','Frente(F)','Atrás(B)','Izq(L)','Der(R)'];
+  showToast('🔍 Buscando solución para ' + faceNames[bestFace] + '...', 1200);
+ 
+  rubikIsSolvingFace = true;
+  document.getElementById('rht_solving').style.display = 'block';
+ 
+  // Run BFS in a setTimeout to not block UI
+  setTimeout(() => {
+    const solution = findMovesToSolveFace(bestFace);
+    if (!solution || solution.length === 0) {
+      // Fallback: just do 3 random corrective moves that improve the face
+      showToast('🪄 Aplicando corrección...', 1000);
+      const fallbackMoves = [{face:'U',cw:true},{face:'F',cw:false},{face:'R',cw:true}];
+      executeMovesSequentially(fallbackMoves, () => {
+        rubikHelpTokens--;
+        updateRubikTokenUI();
+        rubikIsSolvingFace = false;
+        document.getElementById('rht_solving').style.display = 'none';
+        showToast('🪄 ¡Corrección aplicada!', 1500);
+        checkRubikSolved();
+      });
+    } else {
+      showToast('🪄 Resolviendo cara ' + faceNames[bestFace] + ' (' + solution.length + ' movs)', 1500);
+      executeMovesSequentially(solution, () => {
+        rubikHelpTokens--;
+        updateRubikTokenUI();
+        rubikFacesSolved++;
+        rubikIsSolvingFace = false;
+        document.getElementById('rht_solving').style.display = 'none';
+        const remaining = getUnsolvedFaces().length;
+        showToast('✅ ¡Cara resuelta! Quedan ' + remaining + ' caras • ' + rubikHelpTokens + ' ayudas restantes', 2500);
+        checkRubikSolved();
+      });
+    }
+  }, 50);
+}
+ 
+/* ── Execute a sequence of moves with animation delay ── */
+function executeMovesSequentially(moves, onDone, idx) {
+  idx = idx || 0;
+  if (idx >= moves.length) {
+    if (onDone) onDone();
+    return;
+  }
+  const mv = moves[idx];
+  doRubikMove(mv.face, mv.cw, false);
+  setTimeout(() => {
+    executeMovesSequentially(moves, onDone, idx + 1);
+  }, 380);
+}
+ 
+/* ── Check if whole cube is solved ── */
+function checkRubikSolved() {
+  const solved = rub2Board.every(f => f.every(c => c === f[0]));
+  if (solved) {
+    showToast('🎉 ¡¡CUBO RESUELTO!! ¡Increíble! 🏆', 5000);
+    playWin();
+    document.getElementById('rub_state').textContent = '✅ RESUELTO';
+  }
+}
+ 
+function initRubik3D() {
+  const rubCv = document.getElementById('rubik_canvas');
+  rubCv.width = window.innerWidth; rubCv.height = window.innerHeight;
+  if (!rubikRenderer3D) {
+    rubikScene = new THREE.Scene();
+    rubikCam = new THREE.PerspectiveCamera(45, rubCv.width / rubCv.height, 0.1, 100);
+    rubikCam.position.set(0, 0, 6);
+    rubikRenderer3D = new THREE.WebGLRenderer({ canvas: rubCv, antialias: true, alpha: true });
+    rubikRenderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    rubikRenderer3D.setClearColor(0x000000, 0);
+    rubikScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dLight = new THREE.DirectionalLight(0xffffff, 0.8); dLight.position.set(5, 5, 5); rubikScene.add(dLight);
+    const dLight2 = new THREE.DirectionalLight(0xffffff, 0.4); dLight2.position.set(-5, -3, -5); rubikScene.add(dLight2);
+  }
+  rubikRenderer3D.setSize(rubCv.width, rubCv.height);
+  rubikCam.aspect = rubCv.width / rubCv.height; rubikCam.updateProjectionMatrix();
+  if (rubikGroup) rubikScene.remove(rubikGroup);
+  rubikGroup = new THREE.Group(); rubikScene.add(rubikGroup); rubikCubelets = [];
+  const gap = 1.05;
+  const positions = [[-1,-1,-1],[1,-1,-1],[-1,1,-1],[1,1,-1],[-1,-1,1],[1,-1,1],[-1,1,1],[1,1,1]];
+  positions.forEach((pos, idx) => {
+    const materials = createCubeletMaterials(idx);
+    const geo = new THREE.BoxGeometry(0.95, 0.95, 0.95);
+    const mesh = new THREE.Mesh(geo, materials);
+    mesh.position.set(pos[0]*gap/2, pos[1]*gap/2, pos[2]*gap/2);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x111111 }));
+    mesh.add(edges); rubikGroup.add(mesh); rubikCubelets.push({ mesh, logicalPos: [...pos] });
+  });
+  rubikGroup.rotation.x = rubikViewRotX; rubikGroup.rotation.y = rubikViewRotY;
+}
+function createCubeletMaterials(idx) {
+  const black = new THREE.MeshPhongMaterial({ color: 0x111111 });
+  const mats = [black.clone(), black.clone(), black.clone(), black.clone(), black.clone(), black.clone()];
+  const state = rub2Board;
+  const positions = [[-1,-1,-1],[1,-1,-1],[-1,1,-1],[1,1,-1],[-1,-1,1],[1,-1,1],[-1,1,1],[1,1,1]];
+  const [x,y,z] = positions[idx];
+  if (x === 1)  mats[0] = new THREE.MeshPhongMaterial({ color: parseInt(state[5][getCellIdx(y,z,'R')].replace('#',''), 16), shininess:80 });
+  if (x === -1) mats[1] = new THREE.MeshPhongMaterial({ color: parseInt(state[4][getCellIdx(y,z,'L')].replace('#',''), 16), shininess:80 });
+  if (y === 1)  mats[2] = new THREE.MeshPhongMaterial({ color: parseInt(state[0][getCellIdx(x,z,'U')].replace('#',''), 16), shininess:80 });
+  if (y === -1) mats[3] = new THREE.MeshPhongMaterial({ color: parseInt(state[1][getCellIdx(x,z,'D')].replace('#',''), 16), shininess:80 });
+  if (z === 1)  mats[4] = new THREE.MeshPhongMaterial({ color: parseInt(state[2][getCellIdx(x,y,'F')].replace('#',''), 16), shininess:80 });
+  if (z === -1) mats[5] = new THREE.MeshPhongMaterial({ color: parseInt(state[3][getCellIdx(x,y,'B')].replace('#',''), 16), shininess:80 });
+  return mats;
+}
+function getCellIdx(a, b, face) {
+  switch(face) {
+    case 'U': return (b > 0 ? 0 : 2) + (a > 0 ? 1 : 0);
+    case 'D': return (b > 0 ? 2 : 0) + (a > 0 ? 1 : 0);
+    case 'F': return (b < 0 ? 2 : 0) + (a > 0 ? 1 : 0);
+    case 'B': return (b < 0 ? 2 : 0) + (a < 0 ? 1 : 0);
+    case 'L': return (b < 0 ? 2 : 0) + (a > 0 ? 1 : 0);
+    case 'R': return (b < 0 ? 2 : 0) + (a < 0 ? 1 : 0);
+    default: return 0;
+  }
+}
+function refreshRubik3D() {
+  if (!rubikGroup) return;
+  rubikCubelets.forEach((c, idx) => { c.mesh.material = createCubeletMaterials(idx); });
+}
+function initRubik2x2() {
+  rubikActive = true; rubikMoves = 0;
+  rubikTipHistory = [];
+  rubikHelpTokens = 3; rubikFacesSolved = 0;
+  rubikHelpRingProgress = 0; rubikHelpRingTriggered = false;
+  rubikIsSolvingFace = false;
+  rub2Board = solvedState();
+  updateRubikTokenUI();
+  // Scramble
+  const moves = ['U','D','F','B','L','R'];
+  for (let i = 0; i < 10; i++) {
+    const face = moves[Math.floor(Math.random()*moves.length)];
+    const cw = Math.random()>.5;
+    doRubikMoveSilent(face, cw);
+  }
+  rubikMoves = 0;
+  document.getElementById('rub_moves').textContent = 0;
+  document.getElementById('rub_face').textContent = '—';
+  document.getElementById('rub_state').textContent = 'LISTO';
+  initRubik3D();
+  showToast('🎲 ¡Cubo mezclado! 🪄 Tienes 3 ayudas → sostén palma en panel', 3000);
+}
+function rotateFaceArr(fi, cw) {
+  const f = rub2Board[fi].slice();
+  if (cw) rub2Board[fi] = [f[2],f[0],f[3],f[1]];
+  else rub2Board[fi] = [f[1],f[3],f[0],f[2]];
+}
+function cycleAdj(segs, cw) {
+  const b = rub2Board;
+  if (cw) {
+    const tmp = [b[segs[3].face][segs[3].cells[0]], b[segs[3].face][segs[3].cells[1]]];
+    for (let i = 3; i > 0; i--) { b[segs[i].face][segs[i].cells[0]] = b[segs[i-1].face][segs[i-1].cells[0]]; b[segs[i].face][segs[i].cells[1]] = b[segs[i-1].face][segs[i-1].cells[1]]; }
+    b[segs[0].face][segs[0].cells[0]] = tmp[0]; b[segs[0].face][segs[0].cells[1]] = tmp[1];
+  } else {
+    const tmp = [b[segs[0].face][segs[0].cells[0]], b[segs[0].face][segs[0].cells[1]]];
+    for (let i = 0; i < 3; i++) { b[segs[i].face][segs[i].cells[0]] = b[segs[i+1].face][segs[i+1].cells[0]]; b[segs[i].face][segs[i].cells[1]] = b[segs[i+1].face][segs[i+1].cells[1]]; }
+    b[segs[3].face][segs[3].cells[0]] = tmp[0]; b[segs[3].face][segs[3].cells[1]] = tmp[1];
+  }
+}
+function doRubikMove(face, cw, silent) {
+  if (rubikIsAnimating && !silent) return;
+  if (!silent) {
+    rubikIsAnimating = true;
+    rubikMoves++;
+    document.getElementById('rub_moves').textContent = rubikMoves;
+    document.getElementById('rub_face').textContent = face;
+    document.getElementById('rub_state').textContent = 'GIRANDO';
+    showToast((cw ? '↻ ' : '↺ ') + face, 600);
+  }
+  if (face === 'U') { rotateFaceArr(0, cw); cycleAdj([{face:2,cells:[0,1]},{face:5,cells:[0,1]},{face:3,cells:[1,0]},{face:4,cells:[0,1]}], cw); }
+  else if (face === 'D') { rotateFaceArr(1, cw); cycleAdj([{face:2,cells:[2,3]},{face:4,cells:[2,3]},{face:3,cells:[3,2]},{face:5,cells:[2,3]}], cw); }
+  else if (face === 'F') { rotateFaceArr(2, cw); cycleAdj([{face:0,cells:[2,3]},{face:5,cells:[0,2]},{face:1,cells:[1,0]},{face:4,cells:[3,1]}], cw); }
+  else if (face === 'B') { rotateFaceArr(3, cw); cycleAdj([{face:0,cells:[1,0]},{face:4,cells:[0,2]},{face:1,cells:[2,3]},{face:5,cells:[3,1]}], cw); }
+  else if (face === 'L') { rotateFaceArr(4, cw); cycleAdj([{face:0,cells:[0,2]},{face:2,cells:[0,2]},{face:1,cells:[0,2]},{face:3,cells:[3,1]}], cw); }
+  else if (face === 'R') { rotateFaceArr(5, cw); cycleAdj([{face:0,cells:[1,3]},{face:3,cells:[2,0]},{face:1,cells:[1,3]},{face:2,cells:[1,3]}], cw); }
+  if (!silent) {
+    refreshRubik3D();
+    const solved = rub2Board.every(f => f.every(c => c === f[0]));
+    document.getElementById('rub_state').textContent = solved ? '✅ RESUELTO' : 'LIBRE';
+    if (solved) { showToast('🎉 ¡RESUELTO!', 4000); playWin(); }
+    setTimeout(() => { rubikIsAnimating = false; }, 300);
+  }
+}
+ 
+/* ── Palm hold on help ring ── */
+function updateRubikHelpRing(lH, rH) {
+  if (currentMode !== 'rubik' || !rubikActive) return;
+  const ph = lH || rH;
+  const ring = document.getElementById('rubikHelpRing');
+  const fill = document.getElementById('rubikHelpFill');
+  const panel = document.getElementById('rubik_help_tokens');
+  if (!ring || !fill || !panel) return;
+  const isPalm = ph ? isPalmOpen(ph) : false;
+  const r = panel.getBoundingClientRect();
+  const sx = ph ? (1 - ph[8].x) * window.innerWidth : -1;
+  const sy = ph ? ph[8].y * window.innerHeight : -1;
+  const ins = sx >= r.left && sx <= r.right && sy >= r.top && sy <= r.bottom;
+  if (isPalm && ins && !rubikHelpRingTriggered && !rubikIsSolvingFace && rubikHelpTokens > 0) {
+    rubikHelpRingProgress = Math.min(rubikHelpRingProgress + 18, RUBIK_HELP_HOLD);
+    fill.style.transform = `scaleY(${rubikHelpRingProgress / RUBIK_HELP_HOLD})`;
+    ring.classList.add('slapping');
+    if (rubikHelpRingProgress >= RUBIK_HELP_HOLD) {
+      rubikHelpRingTriggered = true;
+      rubikHelpRingProgress = 0; fill.style.transform = 'scaleY(0)'; ring.classList.remove('slapping');
+      rubikSolveFaceWithToken();
+      setTimeout(() => { rubikHelpRingTriggered = false; }, 1500);
+    }
+  } else {
+    ring.classList.remove('slapping');
+    if (!rubikHelpRingTriggered) {
+      rubikHelpRingProgress = Math.max(rubikHelpRingProgress - 20, 0);
+      fill.style.transform = `scaleY(${rubikHelpRingProgress / RUBIK_HELP_HOLD})`;
+    }
+  }
+}
+ 
+let rubikDragLastX = 0, rubikDragLastY = 0, rubikPalmActive = false;
+function handleRubikHands(lH, rH) {
+  if (!rubikActive) return;
+  bioCtx.clearRect(0, 0, bioCanvas.width, bioCanvas.height);
+  if (lH) drawHand(bioCtx, lH, 'rgba(255,215,0,.7)');
+  if (rH) drawHand(bioCtx, rH, 'rgba(255,100,0,.7)');
+  const hand = rH || lH; if (!hand) return;
+  const tip = hand[8], thb = hand[4];
+  const pinch = gd(thb, tip) < 0.07;
+  const palm = isPalmOpen(hand);
+  const sx = (1 - tip.x) * window.innerWidth, sy = tip.y * window.innerHeight;
+  const fc = document.getElementById('finger_cursor');
+  fc.style.display = 'block'; fc.style.left = sx+'px'; fc.style.top = sy+'px';
+  updateGameActionBtns(sx, sy);
+  updateRubikHelpRing(lH, rH);
+  if (palm) {
+    document.getElementById('rub_state').textContent = 'ROTANDO VISTA';
+    if (!rubikPalmActive) { rubikPalmActive = true; rubikDragLastX = tip.x; rubikDragLastY = tip.y; }
+    else {
+      const dx = tip.x - rubikDragLastX, dy = tip.y - rubikDragLastY;
+      if (rubikGroup) { rubikGroup.rotation.y -= dx * 3; rubikGroup.rotation.x += dy * 3; rubikViewRotX = rubikGroup.rotation.x; rubikViewRotY = rubikGroup.rotation.y; }
+      rubikDragLastX = tip.x; rubikDragLastY = tip.y;
+    }
+    rubikTipHistory = []; return;
+  } else {
+    rubikPalmActive = false;
+    if (document.getElementById('rub_state').textContent === 'ROTANDO VISTA') document.getElementById('rub_state').textContent = 'LIBRE';
+  }
+  rubikTipHistory.push({ x: tip.x, y: tip.y });
+  if (rubikTipHistory.length > SWIPE_FRAMES) rubikTipHistory.shift();
+  if (!rubikIsAnimating && !palm && !pinch && rubikTipHistory.length === SWIPE_FRAMES) {
+    const first = rubikTipHistory[0], last = rubikTipHistory[SWIPE_FRAMES-1];
+    const dx = last.x - first.x, dy = last.y - first.y;
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    if (!rubikSwipeDone && (adx > SWIPE_MIN || ady > SWIPE_MIN)) {
+      rubikSwipeDone = true; setTimeout(() => { rubikSwipeDone = false; }, 500);
+      if (adx > ady) doRubikMove(dx > 0 ? 'L' : 'R', true);
+      else doRubikMove(dy > 0 ? 'U' : 'D', true);
+      rubikTipHistory = [];
+    }
+  }
+  if (!rubikIsAnimating && pinch && !rubikPinchWas) {
+    if (rubikTipHistory.length >= 4) {
+      const first = rubikTipHistory[0], last = rubikTipHistory[rubikTipHistory.length-1];
+      const dx = last.x - first.x, dy = last.y - first.y;
+      const adx = Math.abs(dx), ady = Math.abs(dy);
+      if (adx > 0.03 || ady > 0.03) { if (adx > ady) doRubikMove(dx > 0 ? 'B' : 'F', true); else doRubikMove(dy > 0 ? 'D' : 'U', false); }
+      else doRubikMove('F', true);
+    }
+  }
+  rubikPinchWas = pinch;
+}
+ 
+/* =========================================================
+   MEDIAPIPE
+========================================================= */
+const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+hands.setOptions({ maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.72, minTrackingConfidence:0.72 });
+hands.onResults(onResults);
+ 
+function onResults(res) {
+  bioCtx.clearRect(0, 0, bioCanvas.width, bioCanvas.height);
+  crosshair.visible = false;
+  const fc = document.getElementById('finger_cursor');
+  if (!res.multiHandLandmarks || !res.multiHandLandmarks.length) { fc.style.display = 'none'; return; }
+  let lH = null, rH = null;
+  res.multiHandedness.forEach((hand, i) => {
+    const pts = smoothHand(res.multiHandLandmarks[i], hand.label);
+    if (hand.label === 'Left') lH = smoothed['Left'];
+    if (hand.label === 'Right') rH = smoothed['Right'];
+  });
+  if (currentMode === 'build') {
+    if (lH) drawHand(bioCtx, lH, 'rgba(255,106,0,.7)');
+    if (rH) drawHand(bioCtx, rH, 'rgba(255,200,0,.7)');
+  }
+  if (currentMode === 'menu') { handleMenuHands(lH, rH); return; }
+  if (currentMode === 'tetris') { handleTetrisHands(lH, rH); return; }
+  if (currentMode === 'rubik') { handleRubikHands(lH, rH); return; }
+ 
+  // ── BUILD / CHALLENGE / FREE MODE ──
+  // FIX: challenge intro is shown while currentMode='build', handle here
+  if (document.getElementById('challenge_intro').style.display === 'flex') {
+    updateChallengeIntroHand(lH, rH);
+    return;
+  }
+ 
+  const ph = rH || lH;
+  if (ph) {
+    const sx = (1 - ph[8].x) * window.innerWidth, sy = ph[8].y * window.innerHeight;
+    fc.style.display = 'block'; fc.style.left = sx+'px'; fc.style.top = sy+'px';
+    updateGameActionBtns(sx, sy);
+  }
+  updatePalmZones(lH, rH);
+ 
+  // Two-hand gestures
+  if (lH && rH) {
+    const lF = lH[8].y > lH[6].y && lH[12].y > lH[10].y && lH[16].y > lH[14].y;
+    const rF = rH[8].y > rH[6].y && rH[12].y > rH[10].y && rH[16].y > rH[14].y;
+    const lP = lH[8].y < lH[6].y && lH[12].y < lH[10].y && lH[20].y < lH[18].y;
+    const rP = rH[8].y < rH[6].y && rH[12].y < rH[10].y && rH[20].y < rH[18].y;
+    if (lF && rF) {
+      resetT += 16;
+      hudCircle(bioCtx, bioCanvas.width/2, bioCanvas.height/2, Math.min(resetT/RSHOLD, 1), '#ff0055');
+      if (resetT >= RSHOLD) {
+        placedVoxels.forEach(v => voxelGroup.remove(v)); placedVoxels.clear();
+        while (curSketch.children.length) curSketch.remove(curSketch.children[0]);
+        sketKeys.clear();
+        voxelGroup.position.set(0,0,0); voxelGroup.rotation.set(0,0,0);
+        document.getElementById('tb_count').textContent = '0'; gravityEnabled = false;
+        updateChallengeProgress();
+        showToast('🔄 ¡Limpiado!'); resetT = 2000;
+      }
+      return;
+    } else resetT = 0;
+    if (lP && rP) {
+      rotateT += 16;
+      hudCircle(bioCtx, bioCanvas.width/2, bioCanvas.height/2, Math.min(rotateT/RTHOLD, 1), '#ff6a00');
+      if (rotateT >= RTHOLD) { voxelGroup.rotation.y += (rH[9].x - lH[9].x - .5) * .05; voxelGroup.rotation.x += (rH[9].y - lH[9].y) * .05; }
+      return;
+    } else rotateT = 0;
+  }
+ 
+  // Left hand gestures (grab, gravity, color change)
+  if (lH) {
+    const fc2 = lH[8].y > lH[6].y && lH[12].y > lH[10].y && lH[16].y > lH[14].y && lH[20].y > lH[18].y;
+    const isFist = fc2 && gd(lH[4], lH[12]) < 0.1;
+    const isPalmL = lH[8].y < lH[6].y && lH[12].y < lH[10].y && lH[20].y < lH[18].y;
+    const isTD = lH[4].y > lH[3].y && lH[4].y > lH[17].y && fc2;
+    const isTU = lH[4].y < lH[3].y && lH[4].y < lH[5].y && fc2;
+    const isLP = lH[8].y < lH[6].y && lH[12].y < lH[10].y && lH[16].y > lH[14].y && lH[20].y > lH[18].y;
+    if (isLP && !leftPeaceWas) { gColorIdx = (gColorIdx + 1) % colorPalette.length; document.getElementById('tb_color').textContent = colorNames[gColorIdx]; showToast('🎨 ' + colorNames[gColorIdx]); leftPeaceWas = true; }
+    else if (!isLP) leftPeaceWas = false;
+    if (isPalmL) { isGrabbing = false; grabT = 0; }
+    if (isTD && !isFist) {
+      restT = 0;
+      if (!gravityEnabled) { gravT += 16; hudCircle(bioCtx, lH[4].x*bioCanvas.width, lH[4].y*bioCanvas.height, Math.min(gravT/GVHOLD, 1), '#ff00ff'); if (gravT >= GVHOLD) { gravityEnabled = true; doGravityFall(); gravT = 0; } }
+    } else if (isTU && !isFist) { gravT = 0; if (gravityEnabled) { restT += 16; if (restT >= GVHOLD) { gravityEnabled = false; restT = 0; } } }
+    else { gravT = 0; restT = 0; }
+    if (isFist && !isTD && !isTU) {
+      grabT += 16;
+      hudCircle(bioCtx, lH[0].x*bioCanvas.width, lH[0].y*bioCanvas.height, Math.min(grabT/GRHOLD, 1), '#ffbb00');
+      if (grabT >= GRHOLD) {
+        const hw = new THREE.Vector3((0.5 - lH[9].x)*25, (0.5 - lH[9].y)*18, 0);
+        if (!isGrabbing) { grabOff.copy(voxelGroup.position).sub(hw); isGrabbing = true; }
+        voxelGroup.position.copy(hw).add(grabOff);
+      }
+    } else if (isGrabbing) {
+      const hw = new THREE.Vector3((0.5 - lH[9].x)*25, (0.5 - lH[9].y)*18, 0);
+      voxelGroup.position.copy(hw).add(grabOff);
+    }
+  }
+ 
+  // Right hand: build voxels
+  if (rH) {
+    const tip = rH[8], mid = rH[12], thb = rH[4];
+    const pinch = gd(thb, tip) < PTH;
+    const palm = rH[8].y < rH[6].y && rH[12].y < rH[10].y && rH[20].y < rH[18].y;
+    const peace = tip.y < rH[6].y && mid.y < rH[10].y && rH[16].y > rH[14].y && rH[20].y > rH[18].y;
+    if (peace && !rightPeaceWas) { gColorIdx = (gColorIdx + 1) % colorPalette.length; document.getElementById('tb_color').textContent = colorNames[gColorIdx]; showToast('🎨 ' + colorNames[gColorIdx]); rightPeaceWas = true; }
+    else if (!peace) rightPeaceWas = false;
+    const wp = new THREE.Vector3((0.5 - tip.x)*25, (0.5 - tip.y)*18, 0);
+    const lp = voxelGroup.worldToLocal(wp.clone());
+    let gx = Math.round(lp.x/GS)*GS, gy = Math.round(lp.y/GS)*GS, gz = 0;
+    if (pinch && !isGrabbing && !palm) {
+      buildT += 16;
+      hudCircle(bioCtx, tip.x*bioCanvas.width, tip.y*bioCanvas.height, Math.min(buildT/INHOLD, 1), '#ff6a00');
+      if (buildT >= INHOLD) {
+        if (!iBuild) { pinchStart = {x:gx, y:gy, z:gz}; sketKeys.clear(); iBuild = true; axisDir = null; }
+        else {
+          const dx = Math.abs(gx - pinchStart.x), dy = Math.abs(gy - pinchStart.y);
+          if (!axisDir && (dx > .4 || dy > .4)) axisDir = dx >= dy ? 'x' : 'y';
+          let tx = pinchStart.x, ty = pinchStart.y;
+          if (axisDir === 'x') tx = gx; else if (axisDir === 'y') ty = gy;
+          addSket(tx, ty, gz);
+        }
+      }
+    } else if (palm) {
+      if (iBuild) { commitVox(); checkChallengeWin(); }
+      iBuild = false; buildT = 0;
+    } else { buildT = Math.max(buildT - 10, 0); }
+    if (iBuild || buildT > 0) {
+      crosshair.visible = true;
+      crosshair.position.copy(voxelGroup.localToWorld(new THREE.Vector3(gx, gy, gz)));
+      crosshair.material.color.set(colorPalette[gColorIdx]);
+    }
+  }
+}
+ 
+new Camera(videoEl, {
+  onFrame: async () => {
+    bioCanvas.width = videoEl.videoWidth || window.innerWidth;
+    bioCanvas.height = videoEl.videoHeight || window.innerHeight;
+    await hands.send({ image: videoEl });
+  },
+  width: 1280, height: 720
+}).start();
+ 
+/* =========================================================
+   ANIMATION LOOP
+========================================================= */
+function animate() {
+  requestAnimationFrame(animate);
+  if (currentMode === 'build') {
+    placedVoxels.forEach(v => {
+      if (rainbowActive) { v.material.emissive.setHSL(Math.random(), 1, .5); v.material.emissiveIntensity = 2.5; }
+      else { v.material.emissive.setHex(colorPalette[gColorIdx]); v.material.emissiveIntensity = .4; }
+      if (gravityEnabled) {
+        const wp = new THREE.Vector3(); v.getWorldPosition(wp); const fy = floorY();
+        if (wp.y > fy || v.velocity.y > 0) { v.velocity.y -= .025; v.position.add(v.velocity); }
+        else if (!v.isBouncing) { const lf = voxelGroup.worldToLocal(new THREE.Vector3(0, fy, 0)); v.position.y = lf.y; v.velocity.y *= -.15; v.velocity.x *= .5; v.isBouncing = true; }
+        else v.velocity.set(0, 0, 0);
+      } else { v.position.lerp(v.origin, .1); v.isBouncing = false; }
+    });
+    renderer.render(scene, cam3);
+  } else if (currentMode === 'tetris') {
+    drawTetris();
+  } else if (currentMode === 'rubik') {
+    if (rubikRenderer3D && rubikScene && rubikCam) rubikRenderer3D.render(rubikScene, rubikCam);
+  } else {
+    renderer.render(scene, cam3);
+  }
+}
+animate();
+ 
+window.addEventListener('resize', () => {
+  cam3.aspect = window.innerWidth / window.innerHeight;
+  cam3.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (rubikRenderer3D && currentMode === 'rubik') {
+    rubikRenderer3D.setSize(window.innerWidth, window.innerHeight);
+    rubikCam.aspect = window.innerWidth / window.innerHeight;
+    rubikCam.updateProjectionMatrix();
+  }
+});
+document.getElementById('menu_screen').addEventListener('click', () => { if (!currentAudio) playMusic('audio_menu', 'DashFULL'); }, { once: true });
+</script>
+</body>
+</html>
