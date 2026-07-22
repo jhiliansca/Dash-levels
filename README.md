@@ -43,4 +43,6 @@ Este software está construido bajo una arquitectura cliente basada en tecnolog�
 ## ⚡ El futuro es ahora
 Construye, diviértete y experimenta una nueva forma de jugar. **¡Pruébalo ya en [DASH LEVELS](https://dashlevelss.netlify.app/)!**
 
-*Desarrollado con mucho cariño🧡 por [**@hydem._**](https://www.instagram.com/hydem._?igsh=MXNiOGp5dTJ0Zjc4ZA==)*
+👩‍💻 Créditos y Autoría
+Developer: Jhiliansca (yo)
+Follow me for more games and innovation🧡  [**@hydem._**](https://www.instagram.com/hydem._?igsh=MXNiOGp5dTJ0Zjc4ZA==)*
