@@ -40,7 +40,7 @@ Este software está construido bajo una arquitectura cliente basada en tecnolog�
 *   **Estilos e Interfaz:** Animaciones fluidas basadas en CSS Custom Properties (`:root`), efectos de desenfoque de fondo (*backdrop-filter*) y tipografías dinámicas de Google Fonts (Nunito y Boogaloo).
 *   **Diseño Sonoro:** Audio ambiental adaptativo implementado dinámicamente según el modo seleccionado.
 
-## ⚡ El futuro es ahora
+##  El futuro es ahora
 Construye, diviértete y experimenta una nueva forma de jugar. **¡Pruébalo ya en [DASH LEVELS](https://dashlevelss.netlify.app/)!**
 
 👩‍💻 Créditos y Autoría
