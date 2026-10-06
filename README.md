@@ -2,7 +2,7 @@
 
 > **Sistema web inteligente e interactivo para videojuegos dirigido a contribuir en la motricidad de los niños, potenciado por visión artificial en tiempo real.**
 
-Dash Levels es una plataforma web experimental que fusiona el procesamiento biométrico avanzado con entornos interactivos tridimensionales. Mediante el uso de la cámara web, el sistema interpreta los movimientos y gestos de la mano del usuario para interactuar con videojuegos y mecánicas de construcción sin necesidad de un teclado, ratón o mando físico.
+Dash Levels es una plataforma web experimental que fusiona el procesamiento biométrico avanzado con entornos interactivos tridimensionales. Mediante el uso de la cámara web, el sistema interpreta los movimientos y gestos de la mano del usuario para interactuar con videojuegos y mecánicas de construcción sin necesidad de un teclado, ratón o mando físico potenciando asi a la motricidad.
 
 ---
 
